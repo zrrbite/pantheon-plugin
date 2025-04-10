@@ -89,13 +89,13 @@ public class Plugin : BasePlugin
         {
             public static void Prefix(ref float hasteRating)
             {
-                Log.LogInfo("hasteRating before: " + hasteRating );
+                Log.LogInfo("HasteRating before: " + hasteRating );
                 hasteRating = 200;
-                Log.LogInfo("hasteRating after: " + hasteRating );
+                Log.LogInfo("HasteRating after: " + hasteRating );
             }
         }        
-  /*      [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateAttackSpeed), [typeof(float)])]
-        public static class StatCombinationFormulasPatch
+        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateAttackSpeed), [typeof(float)])]
+        public static class AttackSpeedPatch
         {
             public static void Prefix(ref float hastePercent)
             {
@@ -104,8 +104,6 @@ public class Plugin : BasePlugin
                 Log.LogInfo("SetAttackSpeed after: " + hastePercent );
             }
         }        
-*/
-
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EntityPlayerGameObject), nameof(EntityPlayerGameObject.NetworkStop))]
