@@ -78,13 +78,13 @@ public class Plugin : BasePlugin
             public static void Prefix(ref float moveSpeedMultiplier)
             {
                 Log.LogInfo("SetMoveSpeedMultiplier before: " + moveSpeedMultiplier);
-                moveSpeedMultiplier = 2.2f;
+                moveSpeedMultiplier = 2f;
                 Log.LogInfo("SetMoveSpeedMultiplier after: " + moveSpeedMultiplier);
             }
         }
-  
+//  public unsafe static float GetExperienceMultiplier([DefaultParameterValue(null)] int killerLevel, [DefaultParameterValue(null)] int victimLevel)
 //  public unsafe static float CalculateHastePercent([DefaultParameterValue(null)] float hasteRating)
-        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateHastePercent), [typeof(float)])]
+        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateHastePercent))]
         public static class HastePatch
         {
             public static void Prefix(ref float hasteRating)
@@ -93,8 +93,20 @@ public class Plugin : BasePlugin
                 hasteRating = 200;
                 Log.LogInfo("HasteRating after: " + hasteRating );
             }
-        }        
-        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateAttackSpeed), [typeof(float)])]
+        }    
+
+        [HarmonyPatch(typeof(ConsiderTable), nameof(ConsiderTable.GetExperienceMultiplier))]
+        public static class XpPatch
+        {
+            public static void Prefix(ref int killerLevel, ref int victimLevel)
+            {
+                Log.LogInfo("Killer level: " + killerLevel );
+                killerLevel = 1;
+                victimLevel = 20;
+            }
+        }    
+            
+        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateAttackSpeed))]
         public static class AttackSpeedPatch
         {
             public static void Prefix(ref float hastePercent)
@@ -110,9 +122,10 @@ public class Plugin : BasePlugin
         [HarmonyPatch(typeof(CombatEffects), nameof(CombatEffects.SetStealth), [typeof(bool)])]
         public static class StealthPatch
         {
-            public static void Prefix(ref float isStealth)
+            public static void Prefix(ref bool isStealth)
             {
                 Log.LogInfo(" Stealthy ");
+                isStealth = true;
             }
         }
 
@@ -128,16 +141,43 @@ public class Plugin : BasePlugin
             }
         }
 
+//        public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)        
+
         [HarmonyPatch(typeof(CharacterMover), nameof(CharacterMover.SetIsFlying), [typeof(bool)])]
         public static class FlyPatch
         {
             public static void Prefix(ref bool isFlying)
             {
+                Log.LogInfo("Look mom, i can fly!");
                 isFlying = true;
             }
         }
 
-//        public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)        
+/*
+        [HarmonyPatch(typeof(ActiveBuff), nameof(ActiveBuff.Apply), [typeof(double)])]
+        public static class ActiveBuffPatch
+        {
+            public static void Prefix(ref double time)
+            {
+                Log.LogInfo("Buff: " + time);
+                time = 10000;
+                Log.LogInfo("Buff: " + time);
+            }
+        }
+*/
+
+//public unsafe void BuffAddedToMeEvent([DefaultParameterValue(null)] double time, [DefaultParameterValue(null)] ref ActiveBuff activeBuff)
+ /*       [HarmonyPatch(typeof(ActiveBuff), nameof(ActiveBuff.BuffAddedToMeEvent))]
+        public static class BuffPatch
+        {
+            public static void Prefix(ref double time, ref ActiveBuff activeBuff)
+            {
+                Log.LogInfo("Buffs: " + time);
+                time = 10000;
+                Log.LogInfo("Buffs: " + time);                
+            }
+        }
+*/
 
 /*
         [HarmonyPatch(typeof(Experience.Logic), nameof(Experience.Logic.SetLevel), [typeof(int), typeof(bool), typeof(bool)])]
