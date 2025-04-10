@@ -78,23 +78,34 @@ public class Plugin : BasePlugin
             public static void Prefix(ref float moveSpeedMultiplier)
             {
                 Log.LogInfo("SetMoveSpeedMultiplier before: " + moveSpeedMultiplier);
-                moveSpeedMultiplier = 2f;
+                moveSpeedMultiplier = 2.2f;
                 Log.LogInfo("SetMoveSpeedMultiplier after: " + moveSpeedMultiplier);
             }
         }
   
-/*
-        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateAttackSpeed), [typeof(float)])]
-        public static class AttackSpeedPatch
+//  public unsafe static float CalculateHastePercent([DefaultParameterValue(null)] float hasteRating)
+        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateHastePercent), [typeof(float)])]
+        public static class HastePatch
         {
-            public static void Prefix(ref float attackSpeed)
+            public static void Prefix(ref float hasteRating)
             {
-                Log.LogInfo("SetAttackSpeed before: " + attackSpeed );
-                attackSpeed = 200;
-                Log.LogInfo("SetAttackSpeed after: " + attackSpeed );
+                Log.LogInfo("hasteRating before: " + hasteRating );
+                hasteRating = 200;
+                Log.LogInfo("hasteRating after: " + hasteRating );
+            }
+        }        
+  /*      [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateAttackSpeed), [typeof(float)])]
+        public static class StatCombinationFormulasPatch
+        {
+            public static void Prefix(ref float hastePercent)
+            {
+                Log.LogInfo("SetAttackSpeed before: " + hastePercent );
+                hastePercent = 200;
+                Log.LogInfo("SetAttackSpeed after: " + hastePercent );
             }
         }        
 */
+
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EntityPlayerGameObject), nameof(EntityPlayerGameObject.NetworkStop))]
