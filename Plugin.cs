@@ -104,7 +104,29 @@ public class Plugin : BasePlugin
                 Log.LogInfo("SetAttackSpeed after: " + hastePercent );
             }
         }
+//public unsafe void SetStealth([DefaultParameterValue(null)] bool isStealth)
+//public unsafe static bool IsHealthLowEnoughToCauseDeath([DefaultParameterValue(null)] float health, [DefaultParameterValue(null)] float min)
 
+        [HarmonyPatch(typeof(CombatEffects), nameof(CombatEffects.SetStealth), [typeof(bool)])]
+        public static class StealthPatch
+        {
+            public static void Prefix(ref float isStealth)
+            {
+                Log.LogInfo(" Stealthy ");
+            }
+        }
+
+        [HarmonyPatch(typeof(HealthPool), nameof(HealthPool.IsHealthLowEnoughToCauseDeath), [typeof(float), typeof(float)])]
+        public static class ImmortalPatch
+        {
+            public static void Prefix(ref float health, ref float min)
+            {
+                Log.LogInfo("Is health low enough: " + health );
+                health = 200;
+                min = 100; // hit required?
+                Log.LogInfo("Health " + health );
+            }
+        }
 
         [HarmonyPatch(typeof(CharacterMover), nameof(CharacterMover.SetIsFlying), [typeof(bool)])]
         public static class FlyPatch
