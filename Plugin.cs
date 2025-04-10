@@ -103,8 +103,33 @@ public class Plugin : BasePlugin
                 hastePercent = 200;
                 Log.LogInfo("SetAttackSpeed after: " + hastePercent );
             }
-        }        
+        }
 
+
+        [HarmonyPatch(typeof(CharacterMover), nameof(CharacterMover.SetIsFlying), [typeof(bool)])]
+        public static class FlyPatch
+        {
+            public static void Prefix(ref bool isFlying)
+            {
+                isFlying = true;
+            }
+        }
+
+//        public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)        
+
+/*
+        [HarmonyPatch(typeof(Experience.Logic), nameof(Experience.Logic.SetLevel), [typeof(int), typeof(bool), typeof(bool)])]
+        public static class LevelUpPatch
+        {
+            public static void Prefix(ref int level, ref bool resetCurrentExperience, ref bool levelUpEvent)
+            {
+                Log.LogInfo("level up: " + level); //Keep level as it is?
+                level = 10;
+                resetCurrentExperience = false;
+                levelUpEvent = false;
+            }
+        }        
+*/
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EntityPlayerGameObject), nameof(EntityPlayerGameObject.NetworkStop))]
         private static void NetWorkStop(EntityPlayerGameObject __instance)
