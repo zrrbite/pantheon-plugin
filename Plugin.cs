@@ -141,8 +141,8 @@ public class Plugin : BasePlugin
             }
         }
 
-//        public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)        
-
+//        public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)     
+/*   
         [HarmonyPatch(typeof(CharacterMover), nameof(CharacterMover.SetIsFlying), [typeof(bool)])]
         public static class FlyPatch
         {
@@ -152,7 +152,7 @@ public class Plugin : BasePlugin
                 isFlying = true;
             }
         }
-
+*/
 //public unsafe static float CalculateModifiedSpeed([DefaultParameterValue(null)] tIEnity entity, [DefaultParameterValue(null)] float baseSpeed)
         [HarmonyPatch(typeof(LogicalGraphNodes.AttackSpeedCalculator), nameof(LogicalGraphNodes.AttackSpeedCalculator.CalculateModifiedSpeed), [typeof(IEntity), typeof(float)])]
         public static class AtkSpeed
