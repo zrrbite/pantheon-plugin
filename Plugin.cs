@@ -153,6 +153,27 @@ public class Plugin : BasePlugin
             }
         }
 
+//public unsafe static float CalculateModifiedSpeed([DefaultParameterValue(null)] tIEnity entity, [DefaultParameterValue(null)] float baseSpeed)
+        [HarmonyPatch(typeof(LogicalGraphNodes.AttackSpeedCalculator), nameof(LogicalGraphNodes.AttackSpeedCalculator.CalculateModifiedSpeed), [typeof(IEntity), typeof(float)])]
+        public static class AtkSpeed
+        {
+            public static void Prefix(ref IEntity entity, ref float baseSpeed)
+            {
+                Log.LogInfo("Recalc atk speed");
+                baseSpeed = 20;
+            }
+        }
+        //public unsafe float CalculateMaxDamage([DefaultParameterValue(null)] float bonusDamage, [DefaultParameterValue(null)] float weaponMultiplier)
+        [HarmonyPatch(typeof(ItemTemplate), nameof(ItemTemplate.CalculateMaxDamage), [typeof(float), typeof(float)])]
+        public static class MaxDmg
+        {
+            public static void Prefix(ref float bonusDamage, ref float weaponMultiplier)
+            {
+                Log.LogInfo("ItemTemplate mod");
+                bonusDamage = 20;
+                weaponMultiplier = 2;
+            }
+        }
 /*
         [HarmonyPatch(typeof(ActiveBuff), nameof(ActiveBuff.Apply), [typeof(double)])]
         public static class ActiveBuffPatch
