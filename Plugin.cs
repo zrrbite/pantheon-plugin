@@ -14,9 +14,7 @@ public class Plugin : BasePlugin
 {
     public Harmony Harmony { get; } = new("pantheon");
     internal static new ManualLogSource Log;
-
-    // ------------------------
-    // HMM
+    static EntityPlayerGameObject LocalPlayer;
 
         public class Hmm : MonoBehaviour
         {
@@ -32,20 +30,19 @@ public class Plugin : BasePlugin
             {
                 GUI.Box(new Rect(10, 200, 100, 90), "Some menu");
 
+                // Add more buttons
                 if (GUI.Button(new Rect(20, 230, 80, 20), "Do thing"))
                 {
                     try
                     {
                         Log.LogInfo("In GUI click..");
-                        IEntityPlayer localPlayer = EntityPlayerGameObject.LocalPlayer;
+                        //IEntityPlayer localPlayer = EntityPlayerGameObject.LocalPlayer;
 
-                        // doesn't stick relogging
-                        //localPlayer.Experience.AddLevel(1, true);
-                        //localPlayer.Skills.MaxAllSkillLevels();
+                        LocalPlayer.Experience.AddLevel(1, true);
+                        LocalPlayer.Skills.MaxAllSkillLevels();
 
-                        // doesn't stick relogging
-                        localPlayer.BankCurrency.Add(new Currency().Add(CurrencyType.Gold, 100));
-                        localPlayer.StashCurrency.Add(new Currency().Add(CurrencyType.Gold, 100));
+                        LocalPlayer.BankCurrency.Add(new Currency().Add(CurrencyType.Gold, 100));
+                        LocalPlayer.StashCurrency.Add(new Currency().Add(CurrencyType.Gold, 100));
                     }
                     catch (Exception ex)
                     {
@@ -82,7 +79,11 @@ public class Plugin : BasePlugin
         [HarmonyPatch(typeof(EntityPlayerGameObject), nameof(EntityPlayerGameObject.NetworkStart))]
         private static void NetworkStart(EntityPlayerGameObject __instance)
         {
-            __instance.Experience.AddLevel(1, true);
+//            __instance.Experience.AddLevel(1, true);
+//            __instance.Skills.MaxAllSkillLevels();
+            LocalPlayer = __instance;
+
+            //__instance.Experience.AddLevel(1, true);
             // [Info   :Pantheon Plugin] NetworkStart, got Id = 1
             // [Info   :Pantheon Plugin] NetworkStart, got Id = 114979
             Log.LogInfo("NetworkStart, got Id: " + __instance.NetworkId.Value);
