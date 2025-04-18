@@ -6,6 +6,10 @@ using PantheonPersist;
 using UnityEngine;
 using System;
 
+//todo:
+//public unsafe static float GetBonusSpellDamageFromSpellPower([DefaultParameterValue(null)] float spellPower)
+//GetBonusHealingFromSpellPower
+//StatFormulas.ModifyValueByHastePercent
 namespace PantheonPlugin;
 
 
@@ -31,27 +35,51 @@ public class Plugin : BasePlugin
                 GUI.Box(new Rect(10, 200, 100, 90), "Some menu");
 
                 // Add more buttons
-                if (GUI.Button(new Rect(20, 230, 80, 20), "Do thing"))
+                if (GUI.Button(new Rect(20, 230, 100, 30), "+1 Level"))
                 {
                     try
                     {
-                        Log.LogInfo("In GUI click..");
-                        //IEntityPlayer localPlayer = EntityPlayerGameObject.LocalPlayer;
-
+                        Log.LogInfo("Ding!");
                         LocalPlayer.Experience.AddLevel(1, true);
                         LocalPlayer.Skills.MaxAllSkillLevels();
-
-                        LocalPlayer.BankCurrency.Add(new Currency().Add(CurrencyType.Gold, 100));
-                        LocalPlayer.StashCurrency.Add(new Currency().Add(CurrencyType.Gold, 100));
                     }
                     catch (Exception ex)
                     {
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }
+                
+                if (GUI.Button(new Rect(20, 260, 100, 30), "+10 Gold"))
+                {
+                    try
+                    {
+                        Log.LogInfo("I'm rich! +10 gold to Bank and Stash. And atk speed.");
+                        LocalPlayer.BankCurrency.Add(new Currency().Add(CurrencyType.Gold, 10));
+                        LocalPlayer.StashCurrency.Add(new Currency().Add(CurrencyType.Gold, 10));
+//                        LogicalGraphNodes.AttackSpeedCalculator.CalculateModifiedSpeed(EntityPlayerGameObject.LocalPlayer, 20);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }    
+//scp -r deck@192.168.86.42:'/run/media/mmcblk0p1/users/steamuser/Documents/My Games/Pantheon/App/BepInEx/interop/' interop_new
+                if (GUI.Button(new Rect(20, 290, 100, 30), "Almost level up"))
+                {
+                    try
+                    {
+                        Log.LogInfo("Bubbleeeeeeesssss");
+                        int level = LocalPlayer.Experience.Level;
+                        int required_exp = Experience.Logic.CalculateExperienceRequiredToReachLevel(level + 1);
+                        LocalPlayer.Experience.SetExperience(required_exp - 1, false); // Juuust barely
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }                                
             }
         }
-
     // -----------------------------
 
     public override void Load()
@@ -130,6 +158,32 @@ public class Plugin : BasePlugin
                 Log.LogInfo("SetMoveSpeedMultiplier after: " + moveSpeedMultiplier);
             }
         }
+
+        // -------------------------------
+        // Stat Formulas
+        // -------------------------------
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.ModifyValueByHastePercent))]
+        public static class HasteValuePatch
+        {
+            public static void Prefix(ref float value, ref float hastePercent)
+            {
+                Log.LogInfo("Haste thing before: " + hastePercent);
+                hastePercent = 100f;
+                Log.LogInfo("Haste thing after: " + hastePercent);
+            }
+        }
+
+        // MIGHT WORK
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusHealingFromSpellPower), [typeof(float)])]
+        public static class SpellPowerPatch
+        {
+            public static void Prefix(ref float spellPower)
+            {
+                spellPower = 100f;
+            }
+        }
+
+
 //  public unsafe static float GetExperienceMultiplier([DefaultParameterValue(null)] int killerLevel, [DefaultParameterValue(null)] int victimLevel)
 //  public unsafe static float CalculateHastePercent([DefaultParameterValue(null)] float hasteRating)
         [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateHastePercent))]
@@ -203,12 +257,12 @@ public class Plugin : BasePlugin
 */
 //public unsafe static float CalculateModifiedSpeed([DefaultParameterValue(null)] tIEnity entity, [DefaultParameterValue(null)] float baseSpeed)
         [HarmonyPatch(typeof(LogicalGraphNodes.AttackSpeedCalculator), nameof(LogicalGraphNodes.AttackSpeedCalculator.CalculateModifiedSpeed), [typeof(IEntity), typeof(float)])]
-        public static class AtkSpeed
+        public static class AtkSpeedPatch
         {
             public static void Prefix(ref IEntity entity, ref float baseSpeed)
             {
                 Log.LogInfo("Recalc atk speed");
-                baseSpeed = 20;
+                baseSpeed = 100;
             }
         }
         //public unsafe float CalculateMaxDamage([DefaultParameterValue(null)] float bonusDamage, [DefaultParameterValue(null)] float weaponMultiplier)
