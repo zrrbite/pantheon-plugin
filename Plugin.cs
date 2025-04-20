@@ -161,32 +161,70 @@ public class Plugin : BasePlugin
 
         // -------------------------------
         // Stat Formulas
+        // To try:
+        //  StatFormulas.CalculateDamagePerStrength
+        //  public static float CalculateDodge(float dodgeRating) { }
+        // 
+        // Do the "register" spells just fire once?
+        // 
         // -------------------------------
+
+        // This hook is hit
         [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.ModifyValueByHastePercent))]
         public static class HasteValuePatch
         {
             public static void Prefix(ref float value, ref float hastePercent)
             {
-                Log.LogInfo("Haste thing before: " + hastePercent);
-                hastePercent = 100f;
-                Log.LogInfo("Haste thing after: " + hastePercent);
+                Log.LogInfo("Haste percent before: " + hastePercent);
+                hastePercent = 1000f;
+                Log.LogInfo("Haste percent after: " + hastePercent);
             }
         }
 
+/*        // This hook is hit. Seems to hang the game if there are two patches. 
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusSpellDamageFromSpellPower), [typeof(float)])]
+        public static class BonusSpellDamagePatch
+        {
+            public static void Prefix(ref float __result)
+            {
+                __result = 10000f;
+            }
+        }
+*/
+/*
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.CalculateDamagePerStrength), [typeof(float), typeof(float)])]
+        public static class DamagePerStrengthPatch
+        {
+            public static void Prefix(ref float weaponDelay, ref float strength)
+            {
+                Log.LogInfo("weapondelay before: " + weaponDelay);
+                Log.LogInfo("strength before: " + strength);
+
+                weaponDelay = 0.1f;
+                strength = 100f;
+
+                Log.LogInfo("DamagePerStrength after: " + strength);
+                Log.LogInfo("strength after: " + strength);                
+            }
+        }
+*/
+
         // MIGHT WORK
-        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusHealingFromSpellPower), [typeof(float)])]
-        public static class SpellPowerPatch
+/*        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusHealingFromSpellPower), [typeof(float)])]
+        public static class BonusHealingPatch
         {
             public static void Prefix(ref float spellPower)
             {
                 spellPower = 100f;
             }
         }
+*/
 
 
 //  public unsafe static float GetExperienceMultiplier([DefaultParameterValue(null)] int killerLevel, [DefaultParameterValue(null)] int victimLevel)
 //  public unsafe static float CalculateHastePercent([DefaultParameterValue(null)] float hasteRating)
-        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateHastePercent))]
+
+/*        [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateHastePercent))]
         public static class HastePatch
         {
             public static void Prefix(ref float hasteRating)
@@ -196,7 +234,8 @@ public class Plugin : BasePlugin
                 Log.LogInfo("HasteRating after: " + hasteRating );
             }
         }    
-
+*/
+/*
         [HarmonyPatch(typeof(ConsiderTable), nameof(ConsiderTable.GetExperienceMultiplier))]
         public static class XpPatch
         {
@@ -206,8 +245,9 @@ public class Plugin : BasePlugin
                 killerLevel = 1;
                 victimLevel = 20;
             }
-        }    
-            
+        }  
+*/            
+/*
         [HarmonyPatch(typeof(StatCombinationFormulas), nameof(StatCombinationFormulas.CalculateAttackSpeed))]
         public static class AttackSpeedPatch
         {
@@ -218,10 +258,12 @@ public class Plugin : BasePlugin
                 Log.LogInfo("SetAttackSpeed after: " + hastePercent );
             }
         }
+*/
+
 //public unsafe void SetStealth([DefaultParameterValue(null)] bool isStealth)
 //public unsafe static bool IsHealthLowEnoughToCauseDeath([DefaultParameterValue(null)] float health, [DefaultParameterValue(null)] float min)
 
-        [HarmonyPatch(typeof(CombatEffects), nameof(CombatEffects.SetStealth), [typeof(bool)])]
+  /*      [HarmonyPatch(typeof(CombatEffects), nameof(CombatEffects.SetStealth), [typeof(bool)])]
         public static class StealthPatch
         {
             public static void Prefix(ref bool isStealth)
@@ -230,7 +272,9 @@ public class Plugin : BasePlugin
                 isStealth = true;
             }
         }
+*/
 
+/*
         [HarmonyPatch(typeof(HealthPool), nameof(HealthPool.IsHealthLowEnoughToCauseDeath), [typeof(float), typeof(float)])]
         public static class ImmortalPatch
         {
@@ -242,6 +286,7 @@ public class Plugin : BasePlugin
                 Log.LogInfo("Health " + health );
             }
         }
+"*
 
 //        public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)     
 /*   
