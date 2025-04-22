@@ -19,9 +19,11 @@ public class Plugin : BasePlugin
     public Harmony Harmony { get; } = new("pantheon");
     internal static new ManualLogSource Log;
     static EntityPlayerGameObject LocalPlayer;
-
+    static Equipment.Logic GlobalEquipment;
+    
         public class Hmm : MonoBehaviour
         {
+
             private void Start()
             {
                 Log.LogInfo("In Hmm:Start()");
@@ -53,7 +55,7 @@ public class Plugin : BasePlugin
                 {
                     try
                     {
-                        Log.LogInfo("I'm rich! +10 gold to Bank and Stash. And atk speed.");
+                        Log.LogInfo("I'm rich! +10 gold to Bank and Stash");
                         LocalPlayer.BankCurrency.Add(new Currency().Add(CurrencyType.Gold, 10));
                         LocalPlayer.StashCurrency.Add(new Currency().Add(CurrencyType.Gold, 10));
 //                        LogicalGraphNodes.AttackSpeedCalculator.CalculateModifiedSpeed(EntityPlayerGameObject.LocalPlayer, 20);
@@ -64,6 +66,19 @@ public class Plugin : BasePlugin
                     }
                 }    
 //scp -r deck@192.168.86.42:'/run/media/mmcblk0p1/users/steamuser/Documents/My Games/Pantheon/App/BepInEx/interop/' interop_new
+                if (GUI.Button(new Rect(20, 290, 100, 30), "Become GM"))
+                {
+                    try
+                    {
+                        Log.LogInfo("Become GM");
+                        LocalPlayer.info.AccessLevel = AccessLevel.GameMaster;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }  
+                /*
                 if (GUI.Button(new Rect(20, 290, 100, 30), "Almost level up"))
                 {
                     try
@@ -77,7 +92,7 @@ public class Plugin : BasePlugin
                     {
                         Log.LogInfo("Ex: " + ex.Message);
                     }
-                }                                
+                }*/                                
             }
         }
     // -----------------------------
@@ -140,12 +155,73 @@ public class Plugin : BasePlugin
             Log.LogInfo($"level: {__instance.Experience.Level}");
             Log.LogInfo($"race: {__instance.info.Race.ToString()}");
             Log.LogInfo($"class: {__instance.info.Class.ToString()}");
+            Log.LogInfo($"Access: {__instance.info.AccessLevel.ToString()}");
 
             // __instance.Pools = health, mana, focus etc.
             Log.LogInfo($"current health: {__instance.Pools.GetCurrent(PoolType.Health)}");
             Log.LogInfo($"current max health: {__instance.Pools.GetMax(PoolType.Health)}");
             Log.LogInfo($"current breath: {__instance.Pools.GetCurrent(PoolType.Breath)}");
             Log.LogInfo($"current max breath: {__instance.Pools.GetMax(PoolType.Breath)}");
+
+            // Set Equipment
+            Equipment.Logic e = __instance.Equipment; // 46906
+            GlobalEquipment = __instance.Equipment;
+
+/*
+public enum EquipSlotType : byte
+{
+    Head,
+    Wrist,
+    LeftEar,
+    RightEar,
+    Neck,
+    HarvestingTool,
+    Chest,
+    Back,
+    SkinningTool,
+    FishingRod,
+    LightSource,
+    Hands,
+    LeftFinger,
+    RightFinger,
+    Waist,
+    Legs,
+    Feet,
+    PrimaryHand,
+    SecondaryHand,
+    Ranged,
+    Ammo,
+    Relic,
+    HeadGlyph,
+    ChestGlyph,
+    ArmGlyph,
+    HandGlyph,
+    LegGlyph,
+    FootGlyph,
+    CraftingTool,
+    MiningTool,
+    WoodcuttingTool,
+    Shoulders,
+    ProfessionHead,
+    ProfessionChest,
+    ProfessionHands,
+    ProfessionLegs,
+    ProfessionFeet,
+    Max
+}
+
+*/
+            // For all equipped items, if IsWeapon, something about statModifiers (85987)
+            // public void set_Stat(StatType value) { }
+            // public void set_ModifierType(StatModifierType value) { }
+            Item item_0 = e.GetEquippedItem(EquipSlotType.PrimaryHand); //48127. EquipSlotType
+            Item item_1 = e.GetEquippedItem(EquipSlotType.Chest); //48127. EquipSlotType
+            Item item_2 = GlobalEquipment.GetEquippedItem(EquipSlotType.Legs); //48127. EquipSlotType
+
+
+            Log.LogInfo("Item: " + item_0.ToString());
+            Log.LogInfo("Item: " + item_1.ToString());            
+            Log.LogInfo("Global Item: " + item_2.ToString());                      
         }
 
         [HarmonyPatch(typeof(CharacterMover), nameof(CharacterMover.SetMoveSpeedMultiplier), [typeof(float)])]
@@ -180,6 +256,34 @@ public class Plugin : BasePlugin
                 Log.LogInfo("Haste percent after: " + hastePercent);
             }
         }
+
+        // This hook is hit!
+        // public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)      
+        [HarmonyPatch(typeof(CharacterMover), nameof(CharacterMover.SetIsFlying), [typeof(bool)])]
+        public static class FlyPatch
+        {
+            public static void Prefix(ref bool isFlying)
+            {
+                Log.LogInfo("Look mom, i can fly!");
+                isFlying = true;
+            }
+        }        
+
+        // -------------------------------
+        // Equipment Logic
+        // Equipment.Logic GetEquippedItem(EquipSlotType equipSlotType) { }
+        // -------------------------------
+
+        // Hmm, doesnt make sense to hook this
+        // public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)      
+        [HarmonyPatch(typeof(Equipment.Logic), nameof(Equipment.Logic.GetEquippedItem), [typeof(EquipSlotType)])]
+        public static class EquipPatch
+        {
+            public static void Prefix(ref EquipSlotType equipSlotType)
+            {
+                Log.LogInfo("Item" + equipSlotType.ToString());
+            }
+        }  
 
 /*        // This hook is hit. Seems to hang the game if there are two patches. 
         [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusSpellDamageFromSpellPower), [typeof(float)])]
@@ -286,19 +390,9 @@ public class Plugin : BasePlugin
                 Log.LogInfo("Health " + health );
             }
         }
-"*
 
-//        public unsafe void SetIsFlying([DefaultParameterValue(null)] bool isFlying)     
-/*   
-        [HarmonyPatch(typeof(CharacterMover), nameof(CharacterMover.SetIsFlying), [typeof(bool)])]
-        public static class FlyPatch
-        {
-            public static void Prefix(ref bool isFlying)
-            {
-                Log.LogInfo("Look mom, i can fly!");
-                isFlying = true;
-            }
-        }
+
+
 */
 //public unsafe static float CalculateModifiedSpeed([DefaultParameterValue(null)] tIEnity entity, [DefaultParameterValue(null)] float baseSpeed)
         [HarmonyPatch(typeof(LogicalGraphNodes.AttackSpeedCalculator), nameof(LogicalGraphNodes.AttackSpeedCalculator.CalculateModifiedSpeed), [typeof(IEntity), typeof(float)])]
@@ -316,7 +410,7 @@ public class Plugin : BasePlugin
         {
             public static void Prefix(ref float bonusDamage, ref float weaponMultiplier)
             {
-                Log.LogInfo("ItemTemplate mod");
+                Log.LogInfo("ItemTemplate modddd");
                 bonusDamage = 20;
                 weaponMultiplier = 2;
             }
