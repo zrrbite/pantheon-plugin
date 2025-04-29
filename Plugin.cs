@@ -177,8 +177,8 @@ public class Plugin : BasePlugin
 
         private static void OnTick(object sender, STimers.ElapsedEventArgs e)
         {
-            var x = Rng.Next(-2000, 2001);
-            var y = Rng.Next(-2000, 2001);
+            var x = LocalPlayer.Position.x; // Rng.Next(-2000, 2001);
+            var y = LocalPlayer.Position.y; //Rng.Next(-2000, 2001);
             //replace with loc from game.
             File.WriteAllText(LocFile, $"{x}.{y}");
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Wrote {x}.{y}");
