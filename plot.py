@@ -1,27 +1,12 @@
-
-#import matplotlib.pyplot as plt
-#import matplotlib.image as mpimg
-
-# Load and show image
-#img = mpimg.imread('world.png')
-#fig, ax = plt.subplots()
-#ax.imshow(img)
-
-# Plot on the *same axes*
-#ax.axis('off')
-#ax.plot([100, 200], [100, 200], 'ro-')       # red line
-#ax.scatter([300], [150], color='blue')      # blue dot
-#ax.text(250, 250, 'Hello!', color='white')  # text
-
-#plt.show()
-
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.patches as patches
+from math import pi
 
 # --------------------------------------------------------------------------
 # Defines
 # --------------------------------------------------------------------------
+calibration_offset = (-10.5, 42.0) # shalazam 0,0 = 473, 394. Mapgate: (483.5, 352.0). 
 zoom = 1
 map_width, map_height = 967, 704            # in pixels. Try changing it.
 world_xmin, world_xmax = -9789, 10309
@@ -46,9 +31,15 @@ def world_to_map(world_pos):
     x, y = world_pos
     px = origin_px[0] + x * pixels_per_unit_x
     py = origin_px[1] - y * pixels_per_unit_y
+    
+    # Apply calibration
+    px += calibration_offset[0]
+    py += calibration_offset[1]
+
     return round(px, 2), round(py, 2)
 
-player_px = world_to_map((0, 0))
+# player_px = world_to_map((-1418, 7405))
+player_px = world_to_map((-0, 0))
 print(player_px)
 
 img = mpimg.imread('world.png')
@@ -71,12 +62,31 @@ ax.axis('off')
 dim_text = f'{width} x {height}px'
 ax.text(10, 20, dim_text, color='yellow', fontsize=12, backgroundcolor='black')
 
-# Player marker (triangle)
+"""
+heading = your_heading_in_radians  # 0 = right, π/2 = up, etc.
+marker_radius = 8
+
+# Shift center backward so tip aligns with position
+dx = -marker_radius * np.cos(heading)
+dy = -marker_radius * np.sin(heading)
+
+adjusted_px = (player_px[0] + dx, player_px[1] + dy)
+
 player_marker = patches.RegularPolygon(
-    player_px,        # player pos
-    numVertices=3,   # triangle
-    radius=8,        # make it bigger
-    orientation=0,   # 0 = pointing right; use -pi/2 for upward
+    adjusted_px,
+    numVertices=3,
+    radius=marker_radius,
+    orientation=heading,
+    color='red'
+)
+"""
+# Player marker (triangle)
+marker_radius = 8
+player_marker = patches.RegularPolygon(
+    (player_px[0], player_px[1] - marker_radius),  # shift up
+    numVertices=3,
+    radius=marker_radius,
+    orientation=-pi/2,  # triangle tip pointing up
     color='red'
 )
 ax.add_patch(player_marker)
