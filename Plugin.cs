@@ -168,7 +168,7 @@ public class Plugin : BasePlugin
     {
         private static readonly string LocFile = "loc";
         private static readonly System.Random Rng = new System.Random();
-        private static STimers.Timer _timer;
+    //    private static STimers.Timer _timer;
                 // 3) Method group / named method
         void PrintItem(Item it)
         {
@@ -233,10 +233,10 @@ public class Plugin : BasePlugin
             GlobalEquipment = __instance.Equipment;
 
             // Start timer
-            _timer = new STimers.Timer(5000);
-            _timer.Elapsed += OnTick;
-            _timer.AutoReset = true;
-            _timer.Enabled   = true;      // starts it immediately
+//            _timer = new STimers.Timer(5000);
+//            _timer.Elapsed += OnTick;
+//            _timer.AutoReset = true;
+//            _timer.Enabled   = true;      // starts it immediately
 
             // modifiers
 //            __instance.Modifiers
@@ -443,7 +443,6 @@ public enum StatType // TypeDefIndex: 17296
             Action<Item> callback = itm =>  Log.LogInfo(itm.ToString());
             e.ForEach(callback);
 
-
             //Action<Item> callback2 = itm =>  Log.LogInfo("weapon: " + itm.IsWeapon());
             //e.ForEach(callback2);
         }
@@ -468,6 +467,27 @@ public enum StatType // TypeDefIndex: 17296
                 //moveSpeedMultiplier = 2.5f;
                 moveSpeedMultiplier = SpeedMult;
                 Log.LogInfo("SetMoveSpeedMultiplier after: " + moveSpeedMultiplier);
+
+                //Also check for GM?
+                /* 
+                    public bool IsDev { get; }
+                    public bool IsGM { get; set; }
+                    public bool GMImmortal { get; set; }
+                    public bool GMCanBeAggroed { get; set; }
+                    public bool GMInvisible { get; set; }
+                    public GMFlags GMFlags { get; set; }
+                    public SocialFlags SocialFlags { get; set; }
+                    public string DefaultDisplayName { get; set; }
+                */
+
+                foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
+                {
+                    Log.LogInfo(entity.ToString());
+                    if(entity.Info.IsGM || entity.Info.IsDev)
+                    {
+                        Log.LogInfo("!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +entity.Info.Position.ToString() + ". Invisible = " + entity.Info.GMInvisible);
+                    }
+                }
             }
         }
 
