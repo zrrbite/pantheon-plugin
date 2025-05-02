@@ -486,15 +486,37 @@ public enum StatType // TypeDefIndex: 17296
                     Vector3 mypos = LocalPlayer.Position;
                     Vector3 diff = mpos - mypos;
 
-                    Vector3 toMonster = entity.transform.position - LocalPlayer.transform.position;
-                    float dot = Vector3.Dot(LocalPlayer.transform.forward.normalized, toMonster.normalized);
+                    Vector3 toMonster = (entity.Transform.position - LocalPlayer.Transform.position).normalized;
+                    Vector3 forward = LocalPlayer.Transform.forward;
+                    Vector3 right = LocalPlayer.Transform.right;
+
+                    // Angle between forward and toMonster
+                    float dotForward = Vector3.Dot(forward, toMonster);   // front vs back
+                    float dotRight = Vector3.Dot(right, toMonster); 
+                    string heading = "";
+                    if (dotForward > 0.707f)  // cos(45°)
+                    {
+                        heading = " in front of you.";
+                    }
+                    else if (dotForward < -0.707f)
+                    {
+                        heading = " behind you.";
+                    }
+                    else if (dotRight > 0)
+                    {
+                       heading = " to the right of you.";
+                    }
+                    else
+                    {
+                        heading = " to the left of you.";
+                    }
 
                     //Log.LogInfo(entity.ToString()); // Log everything
-                      Log.LogInfo(entity.ToString() + " detected at " +  entity.Position.ToString() + ". Diff = " + diff.ToString());
-                      if (dot > Mathf.Cos(30 * Mathf.Deg2Rad))  // 60° field of view (±30°)
-                        {
-                            Debug.Log("It is in front of you!");
-                        }
+                      Log.LogInfo(entity.ToString() + " detected at " +  entity.Position.ToString() + heading);
+//                      if (dot > Mathf.Cos(30 * Mathf.Deg2Rad))  // 60° field of view (±30°)
+//                        {
+//                            Debug.Log("It is in front of you!");
+//                        }
 
                     if(entity.Info.IsGM || entity.Info.IsDev)
                     {
