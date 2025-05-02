@@ -6,11 +6,14 @@ from math import pi
 # --------------------------------------------------------------------------
 # Defines
 # --------------------------------------------------------------------------
-calibration_offset = (-10.5, 42.0) # shalazam 0,0 = 473, 394. Mapgate: (483.5, 352.0). 
+dx = 194 - 365
+dy = 458 - 428
+calibration_offset = (dx, dy)
+#calibration_offset = (-10.5, 42.0) # shalazam 0,0 = 473, 394. Mapgate: (483.5, 352.0).   shala 0,0 194, 458. ours 354 469
 zoom = 1
-map_width, map_height = 967, 704            # in pixels. Try changing it.
-world_xmin, world_xmax = -9789, 10309
-world_ymin, world_ymax = -6461, 8081
+map_width, map_height = 728, 862 #967, 704            # in pixels. Try changing it.
+world_xmin, world_xmax = -1969, 5265 #-9789, 10309
+world_ymin, world_ymax = -4186, 4673 #-6461, 8081
 
 world_width = world_xmax - world_xmin
 world_height = world_ymax - world_ymin
@@ -39,7 +42,7 @@ def world_to_map(world_pos):
     return round(px, 2), round(py, 2)
 
 # player_px = world_to_map((-1418, 7405))
-player_px = world_to_map((-0, 0))
+player_px = world_to_map((3340, -2600))
 print(player_px)
 
 img = mpimg.imread('world.png')
@@ -53,10 +56,6 @@ ax = fig.add_axes([0, 0, 1, 1])  # remove all padding
 # Show image
 ax.imshow(img, extent=[0, width, height, 0])
 ax.axis('off')
-
-# Draw something on top
-#ax.plot([0, width], [0, height], 'r-')
-#ax.text(50, 50, 'Text', color='white')
 
 # Display image dimensions in top-left corner
 dim_text = f'{width} x {height}px'
@@ -90,12 +89,5 @@ player_marker = patches.RegularPolygon(
     color='red'
 )
 ax.add_patch(player_marker)
-
-# POI
-ax.scatter([20, 80], [30, 70], color='yellow', marker='o')
-
-# Viewport rectangle
-viewport = patches.Rectangle((40, 40), 20, 20, linewidth=1, edgecolor='white', facecolor='none')
-ax.add_patch(viewport)
 
 plt.show()
