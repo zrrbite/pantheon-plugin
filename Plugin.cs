@@ -469,6 +469,12 @@ public enum StatType // TypeDefIndex: 17296
                 moveSpeedMultiplier = SpeedMult;
                 Log.LogInfo("SetMoveSpeedMultiplier after: " + moveSpeedMultiplier);
 
+                //TODO
+                // worldtometers. Go in and measure
+                //  Sort by distance?
+                // 
+
+
                 //Also check for GM?
                 /* 
                     public bool IsDev { get; }
@@ -484,6 +490,11 @@ public enum StatType // TypeDefIndex: 17296
                 foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
                 {
                     string entity_str = Regex.Replace(entity.ToString(), @"\s+\(NetworkId\(\d+\)\)$", "");
+                    var unitsPerMeter = 2.0f;
+                    var metersPerUnit = 1.0f / unitsPerMeter;
+
+                    float WorldUnitsToMeters(float units) => units * metersPerUnit;
+                    //float MetersToWorldUnits(float meters) => meters * unitsPerMeter;
 
                     Vector3 mpos = entity.Position;
                     Vector3 mypos = LocalPlayer.Position;
@@ -517,7 +528,7 @@ public enum StatType // TypeDefIndex: 17296
                     }
 
                     //Log.LogInfo(entity.ToString()); // Log everything
-                      Log.LogInfo(entity_str + " detected at " +  entity.Position.ToString() + heading);
+                      Log.LogInfo(entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading);
 //                      if (dot > Mathf.Cos(30 * Mathf.Deg2Rad))  // 60° field of view (±30°)
 //                        {
 //                            Debug.Log("It is in front of you!");
