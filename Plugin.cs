@@ -482,10 +482,23 @@ public enum StatType // TypeDefIndex: 17296
 
                 foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
                 {
-                    Log.LogInfo(entity.ToString());
+                    Vector3 mpos = entity.Position;
+                    Vector3 mypos = LocalPlayer.Position;
+                    Vector3 diff = mpos - mypos;
+
+                    Vector3 toMonster = entity.transform.position - LocalPlayer.transform.position;
+                    float dot = Vector3.Dot(LocalPlayer.transform.forward.normalized, toMonster.normalized);
+
+                    //Log.LogInfo(entity.ToString()); // Log everything
+                      Log.LogInfo(entity.ToString() + " detected at " +  entity.Position.ToString() + ". Diff = " + diff.ToString());
+                      if (dot > Mathf.Cos(30 * Mathf.Deg2Rad))  // 60° field of view (±30°)
+                        {
+                            Debug.Log("It is in front of you!");
+                        }
+
                     if(entity.Info.IsGM || entity.Info.IsDev)
                     {
-                        Log.LogInfo("!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +entity.Info.Position.ToString() + ". Invisible = " + entity.Info.GMInvisible);
+                        Log.LogInfo("!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +  entity.Position.ToString() + ". Flags = " + entity.Info.GMFlags.ToString() + ". Invisible = " + entity.Info.GMInvisible);
                     }
                 }
             }
