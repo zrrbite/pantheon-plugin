@@ -8,6 +8,7 @@ using UnityEngine;
 using System;
 using System.IO;
 using STimers = System.Timers;    // alias so “Timer” is unambiguous
+using System.Text.RegularExpressions;
 
 //todo:
 //public unsafe static float GetBonusSpellDamageFromSpellPower([DefaultParameterValue(null)] float spellPower)
@@ -482,6 +483,8 @@ public enum StatType // TypeDefIndex: 17296
 
                 foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
                 {
+                    string entity_str = Regex.Replace(entity.ToString(), @"\s+\(NetworkId\(\d+\)\)$", "");
+
                     Vector3 mpos = entity.Position;
                     Vector3 mypos = LocalPlayer.Position;
                     Vector3 diff = mpos - mypos;
@@ -494,17 +497,19 @@ public enum StatType // TypeDefIndex: 17296
                     float dotForward = Vector3.Dot(forward, toMonster);   // front vs back
                     float dotRight = Vector3.Dot(right, toMonster); 
                     string heading = "";
-                    if (dotForward > 0.707f)  // cos(45°)
+                    float angleThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);  // = 0.7071...
+
+                    if (dotForward > angleThreshold)
                     {
                         heading = " in front of you.";
                     }
-                    else if (dotForward < -0.707f)
+                    else if (dotForward < -angleThreshold)
                     {
                         heading = " behind you.";
                     }
                     else if (dotRight > 0)
                     {
-                       heading = " to the right of you.";
+                        heading = " to the right of you.";
                     }
                     else
                     {
@@ -512,7 +517,7 @@ public enum StatType // TypeDefIndex: 17296
                     }
 
                     //Log.LogInfo(entity.ToString()); // Log everything
-                      Log.LogInfo(entity.ToString() + " detected at " +  entity.Position.ToString() + heading);
+                      Log.LogInfo(entity_str + " detected at " +  entity.Position.ToString() + heading);
 //                      if (dot > Mathf.Cos(30 * Mathf.Deg2Rad))  // 60° field of view (±30°)
 //                        {
 //                            Debug.Log("It is in front of you!");
