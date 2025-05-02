@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.patches as patches
 from math import pi
+from matplotlib.patches import FancyArrow
+from math import cos, sin
 
 # --------------------------------------------------------------------------
 # Defines
@@ -26,6 +28,44 @@ pixels_per_unit_y = (map_height * zoom) / world_height
 print("pixels per unit {}".format(pixels_per_unit_x))
 print("pixels per unit {}".format(pixels_per_unit_y))
 
+def draw_player_circle_with_heading(ax, center, heading_rad, radius=8, line_length=12, color='red'):
+    from math import cos, sin
+
+    cx, cy = center
+
+    # Draw circle at player position
+    circle = plt.Circle(
+        (cx, cy - radius/2),
+        radius,
+        edgecolor=color,
+        facecolor='red',
+        linewidth=2)
+    ax.add_patch(circle)
+
+    # Draw heading line
+    dx = cos(heading_rad) * line_length
+    dy = -sin(heading_rad) * line_length  # negative for screen y-down
+    ax.plot([cx, cx + dx], [cy - radius/2, cy + dy], color=color, linewidth=2)
+
+# Draw player arrow at world position
+def draw_player_arrow(ax, tip, heading_rad, length=15, width=3, color='red'):
+    tx, ty = tip
+    dx = cos(heading_rad) * length
+    dy = -sin(heading_rad) * length  # account for y-down screen
+
+    start_x = tx - dx
+    start_y = ty - dy
+
+    arrow = patches.FancyArrow(
+        start_x, start_y, dx, dy,
+        width=width,
+        head_width=width * 1.5,
+        head_length=length * 0.5,
+        length_includes_head=True,
+        color=color
+    )
+    ax.add_patch(arrow)
+
 # --------------------------------------------------------------------------
 # Transform world scale to map scale
 #    Focus on center of map ( origin_px ). But, we COULD change origin_px to be the players location! e.g. Minimap-style
@@ -41,8 +81,9 @@ def world_to_map(world_pos):
 
     return round(px, 2), round(py, 2)
 
-# player_px = world_to_map((-1418, 7405))
-player_px = world_to_map((3340, -2600))
+#player_px = world_to_map((3340, -2600))
+player_px = world_to_map((0, 0))
+
 print(player_px)
 
 img = mpimg.imread('world.png')
@@ -79,15 +120,11 @@ player_marker = patches.RegularPolygon(
     color='red'
 )
 """
-# Player marker (triangle)
-marker_radius = 8
-player_marker = patches.RegularPolygon(
-    (player_px[0], player_px[1] - marker_radius),  # shift up
-    numVertices=3,
-    radius=marker_radius,
-    orientation=-pi/2,  # triangle tip pointing up
-    color='red'
-)
-ax.add_patch(player_marker)
+# Set a test heading
+heading = -pi / 2  # up
+#draw_player_arrow(ax, player_px, heading)
+draw_player_circle_with_heading(ax, player_px, heading)
+tet_loc = world_to_map((0, 0))
+ax.text(tet_loc[0]-50, tet_loc[1]-80, "World Origin", color='white', fontsize=12, backgroundcolor='black')
 
 plt.show()
