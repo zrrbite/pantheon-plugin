@@ -14,6 +14,7 @@
 #
 #
 # run with:
+# ssh deck@192.168.86.42 "tcpdump -s 0 -U -n -w - -i wlan0 udp portrange 7000-8000" | python3.11 plot.py
 # ssh deck@steamdeck "tcpdump -s 0 -U -n -w - -i wlan0 udp portrange 7000-8000" | python3 shark.py
 # might need scapy: pipx install scapy (pipx does not require venv setup, as opposed to pip.
 # If you have/use Python venvs, and don't have pipx installed, then just install via. pip
