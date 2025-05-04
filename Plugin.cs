@@ -29,42 +29,75 @@ public class Plugin : BasePlugin
     
         public class Hmm : MonoBehaviour
         {
+            // UI
+            private Rect MainWindow;
+            private static string[] lines = new string[]
+            {
+                "Line 1: Hello",
+                "Line 2: World",
+                "Line 3: This is a test",
+                "Line 4: More text...",
+                "Line 5: Scroll me!",
+                "Line 6: Line 6",
+                "Line 7: Line 7",
+                "Line 8: Line 8",
+                "Line 9: Line 9",
+                "Line 10: The end"
+            };
 
+            private static Rect windowRect = new Rect(10, 500, 300, 200);
+            private static Vector2 scrollPosition = Vector2.zero;
+            // Define scrollable area inside the box
+            static Rect viewRect = new Rect(windowRect.x + 10, windowRect.y + 25, windowRect.width - 20, windowRect.height - 35);
+            static Rect contentRect = new Rect(0, 0, viewRect.width - 20, lines.Length * 20);
+
+            private static void RenderUIStatic(int id)
+            {
+                GUILayout.Label("Tracking window");
+                GUI.DragWindow();
+            }
             private void Start()
             {
                 Log.LogInfo("In Hmm:Start()");
                 Log.LogInfo("Experience to level 10: " + Experience.Logic.CalculateExperienceRequiredToReachLevel(10));
+                Log.LogInfo("Preparing MainWindow");
+                MainWindow = new Rect(150.0f, Screen.height - 250f, 250f, 150f);
             }
 
             private void OnUpdate() { }
 
+            private static void RenderUI(int id)
+            {
+                // Tracking UI
+                GUILayout.Space(1f);
+
+                // Finalize
+                GUI.DragWindow();
+            }
+
             private void OnGUI()
             {
-                GUI.Box(new Rect(10, 200, 100, 90), "Some menu");
+                //MainWindow = GUILayout.Window(0, MainWindow, new GUI.WindowFunction(RenderUI), "Tracking", new GUILayoutOption[0]);
 
-                // Add more buttons
-                if (GUI.Button(new Rect(20, 230, 100, 30), "+1 Level"))
+                // Draw the window box
+                GUI.Box(windowRect, "Log Output");
+
+                scrollPosition = GUI.BeginScrollView(viewRect, scrollPosition, contentRect);
+
+                for (int i = 0; i < lines.Length; i++)
                 {
-                    try
-                    {
-                        Log.LogInfo("Ding!");
-                        LocalPlayer.Experience.AddLevel(1, true);
-                        LocalPlayer.Skills.MaxAllSkillLevels();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.LogInfo("Ex: " + ex.Message);
-                    }
+                    GUI.Label(new Rect(0, i * 20, contentRect.width, 20), lines[i]);
                 }
-                
-                if (GUI.Button(new Rect(20, 260, 100, 30), "+0.5 speed mult"))
+
+                GUI.EndScrollView();
+
+                // Function menu
+                GUI.Box(new Rect(10, 200, 120, 150), "Menu");
+
+                if (GUI.Button(new Rect(20, 230, 100, 30), "+0.5x movement"))
                 {
                     try
                     {
-                        //Log.LogInfo("I'm rich! +10 gold to Bank and Stash");
-                        //LocalPlayer.BankCurrency.Add(new Currency().Add(CurrencyType.Gold, 10));
-                        //LocalPlayer.StashCurrency.Add(new Currency().Add(CurrencyType.Gold, 10));
-                        // LogicalGraphNodes.AttackSpeedCalculator.CalculateModifiedSpeed(EntityPlayerGameObject.LocalPlayer, 20);
                         Log.LogInfo("+0.5x speed.");
                         SpeedMult = SpeedMult + 0.5f;
                     }
@@ -73,7 +106,7 @@ public class Plugin : BasePlugin
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }    
-                if (GUI.Button(new Rect(20, 290, 100, 30), "-0.5 speed mult"))
+                if (GUI.Button(new Rect(20, 260, 100, 30), "-0.5x movement"))
                 {
                     try
                     {
@@ -85,7 +118,7 @@ public class Plugin : BasePlugin
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }         
-                if (GUI.Button(new Rect(20, 310, 100, 30), "Fly Mode"))
+                if (GUI.Button(new Rect(20, 290, 100, 30), "Toggle Fly"))
                 {
                     try
                     {
@@ -97,11 +130,13 @@ public class Plugin : BasePlugin
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }
-                if (GUI.Button(new Rect(20, 340, 100, 30), "Something exp"))
+                if (GUI.Button(new Rect(20, 320, 100, 30), "Track"))
                 {
                     try
                     {
-                        Log.LogInfo("xp");
+                        Log.LogInfo("Tracking window active");
+
+
 
                     }
                     catch (Exception ex)
@@ -489,25 +524,33 @@ public enum StatType // TypeDefIndex: 17296
 
                 foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
                 {
+                    // Constants
                     string entity_str = Regex.Replace(entity.ToString(), @"\s+\(NetworkId\(\d+\)\)$", "");
                     var unitsPerMeter = 2.0f;
                     var metersPerUnit = 1.0f / unitsPerMeter;
+                    string heading    = "";
 
                     float WorldUnitsToMeters(float units) => units * metersPerUnit;
-                    //float MetersToWorldUnits(float meters) => meters * unitsPerMeter;
+                    //f float MetersToWorldUnits(float meters) => meters * unitsPerMeter;
 
-                    Vector3 mpos = entity.Position;
+                    Vector3 mpos  = entity.Position;
                     Vector3 mypos = LocalPlayer.Position;
-                    Vector3 diff = mpos - mypos;
+                    Vector3 diff  = mpos - mypos;
+
+                    // Helpers.IsPlayer((EntityPlayerGameObject)entity);
+                    if(diff == Vector3.zero) // Skip myself, until i can figure out how to call .IsPlayer
+                    {
+                        continue;
+                    }
 
                     Vector3 toMonster = (entity.Transform.position - LocalPlayer.Transform.position).normalized;
-                    Vector3 forward = LocalPlayer.Transform.forward;
-                    Vector3 right = LocalPlayer.Transform.right;
+                    Vector3 forward   = LocalPlayer.Transform.forward;
+                    Vector3 right     = LocalPlayer.Transform.right;
 
                     // Angle between forward and toMonster
                     float dotForward = Vector3.Dot(forward, toMonster);   // front vs back
-                    float dotRight = Vector3.Dot(right, toMonster); 
-                    string heading = "";
+                    float dotRight   = Vector3.Dot(right,   toMonster); 
+                    
                     float angleThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);  // = 0.7071...
 
                     if (dotForward > angleThreshold)
@@ -526,14 +569,12 @@ public enum StatType // TypeDefIndex: 17296
                     {
                         heading = " to the left of you.";
                     }
+                    
+                    Log.LogInfo(entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading);
 
-                    //Log.LogInfo(entity.ToString()); // Log everything
-                      Log.LogInfo(entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading);
-//                      if (dot > Mathf.Cos(30 * Mathf.Deg2Rad))  // 60° field of view (±30°)
-//                        {
-//                            Debug.Log("It is in front of you!");
-//                        }
-
+                    // -------------------------------
+                    // Detect GMs
+                    //
                     if(entity.Info.IsGM || entity.Info.IsDev)
                     {
                         Log.LogInfo("!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +  entity.Position.ToString() + ". Flags = " + entity.Info.GMFlags.ToString() + ". Invisible = " + entity.Info.GMInvisible);
