@@ -49,6 +49,9 @@ public class Plugin : BasePlugin
             // Define scrollable area inside the box
             static Rect viewRect = new Rect(windowRect.x + 10, windowRect.y + 25, windowRect.width - 20, windowRect.height - 35);
             static Rect contentRect = new Rect(0, 0, viewRect.width - 20, lines.Length * 20);
+            private Rect statusRect = new Rect(200, 10, 200, 50);
+            private bool gm = false; 
+            private string gmString = "";
 
             private static void RenderUIStatic(int id)
             {
@@ -73,13 +76,30 @@ public class Plugin : BasePlugin
                 // Finalize
                 GUI.DragWindow();
             }
+            // how is it different than ongui?
+            private void Update()
+            {
+                if (Input.GetKeyDown(KeyCode.F1))
+                {
+                    Log.LogInfo("F1 pressed");
+                }
+            }
 
             private void OnGUI()
             {
                 //MainWindow = GUILayout.Window(0, MainWindow, new GUI.WindowFunction(RenderUI), "Tracking", new GUILayoutOption[0]);
 
+                // save the old background color
+                Color oldBg = GUI.backgroundColor;
+
+                GUI.backgroundColor = gm ? Color.red : Color.green;
+                GUI.Box(statusRect, gm ? gmString : "");
+
+                // restore old color
+                GUI.backgroundColor = oldBg;
+                
                 // Draw the window box
-                GUI.Box(windowRect, "Log Output");
+                GUI.Box(windowRect, "Tracking");
 
                 scrollPosition = GUI.BeginScrollView(viewRect, scrollPosition, contentRect);
 
@@ -154,9 +174,13 @@ public class Plugin : BasePlugin
                     //
                     if(entity.Info.IsGM || entity.Info.IsDev)
                     {
-                        string gm = "!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +  entity.Position.ToString() + ". Flags = " + entity.Info.GMFlags.ToString() + ". Invisible = " + entity.Info.GMInvisible;
-                        Log.LogInfo(gm);
-//                         GUI.Label(new Rect(0, i * 20, contentRect.width, 20), gm);
+                        gmString = "!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +  entity.Position.ToString() + ". Flags = " + entity.Info.GMFlags.ToString() + ". Invisible = " + entity.Info.GMInvisible;
+                        gm = true;
+                        Log.LogInfo(gmString);
+                    }
+                    else
+                    {
+                        gm =false;
                     }
                 }
 
