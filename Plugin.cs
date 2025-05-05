@@ -44,7 +44,6 @@ public class Plugin : BasePlugin
                 "Line 9: Line 9",
                 "Line 10: The end"
             };
-
             private static Rect windowRect = new Rect(10, 500, 300, 200);
             private static Vector2 scrollPosition = Vector2.zero;
             // Define scrollable area inside the box
@@ -84,9 +83,81 @@ public class Plugin : BasePlugin
 
                 scrollPosition = GUI.BeginScrollView(viewRect, scrollPosition, contentRect);
 
-                for (int i = 0; i < lines.Length; i++)
+                //Also check for GM?
+                /* 
+                    public bool IsDev { get; }
+                    public bool IsGM { get; set; }
+                    public bool GMImmortal { get; set; }
+                    public bool GMCanBeAggroed { get; set; }
+                    public bool GMInvisible { get; set; }
+                    public GMFlags GMFlags { get; set; }
+                    public SocialFlags SocialFlags { get; set; }
+                    public string DefaultDisplayName { get; set; }
+                */
+
+                int entries = 0;
+                foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
                 {
-                    GUI.Label(new Rect(0, i * 20, contentRect.width, 20), lines[i]);
+                    // Constants
+                    string entity_str = Regex.Replace(entity.ToString(), @"\s+\(NetworkId\(\d+\)\)$", "");
+                    var unitsPerMeter = 2.0f;
+                    var metersPerUnit = 1.0f / unitsPerMeter;
+                    string heading    = "";
+
+                    float WorldUnitsToMeters(float units) => units * metersPerUnit;
+                    //f float MetersToWorldUnits(float meters) => meters * unitsPerMeter;
+
+                    Vector3 mpos  = entity.Position;
+                    Vector3 mypos = LocalPlayer.Position;
+                    Vector3 diff  = mpos - mypos;
+
+                    // Helpers.IsPlayer((EntityPlayerGameObject)entity);
+                    if(diff == Vector3.zero) // Skip myself, until i can figure out how to call .IsPlayer
+                    {
+                        continue;
+                    }
+
+                    Vector3 toMonster = (entity.Transform.position - LocalPlayer.Transform.position).normalized;
+                    Vector3 forward   = LocalPlayer.Transform.forward;
+                    Vector3 right     = LocalPlayer.Transform.right;
+
+                    // Angle between forward and toMonster
+                    float dotForward = Vector3.Dot(forward, toMonster);   // front vs back
+                    float dotRight   = Vector3.Dot(right,   toMonster); 
+                    
+                    float angleThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);  // = 0.7071...
+
+                    if (dotForward > angleThreshold)
+                    {
+                        heading = " in front of you.";
+                    }
+                    else if (dotForward < -angleThreshold)
+                    {
+                        heading = " behind you.";
+                    }
+                    else if (dotRight > 0)
+                    {
+                        heading = " to the right of you.";
+                    }
+                    else
+                    {
+                        heading = " to the left of you.";
+                    }
+                    
+                    string entry = entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading;
+                    //Log.LogInfo(entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading);
+                    GUI.Label(new Rect(0, entries * 20, contentRect.width, 20), entry);
+                    entries++;
+
+                    // -------------------------------
+                    // Detect GMs
+                    //
+                    if(entity.Info.IsGM || entity.Info.IsDev)
+                    {
+                        string gm = "!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +  entity.Position.ToString() + ". Flags = " + entity.Info.GMFlags.ToString() + ". Invisible = " + entity.Info.GMInvisible;
+                        Log.LogInfo(gm);
+//                         GUI.Label(new Rect(0, i * 20, contentRect.width, 20), gm);
+                    }
                 }
 
                 GUI.EndScrollView();
@@ -508,78 +579,6 @@ public enum StatType // TypeDefIndex: 17296
                 // worldtometers. Go in and measure
                 //  Sort by distance?
                 // 
-
-
-                //Also check for GM?
-                /* 
-                    public bool IsDev { get; }
-                    public bool IsGM { get; set; }
-                    public bool GMImmortal { get; set; }
-                    public bool GMCanBeAggroed { get; set; }
-                    public bool GMInvisible { get; set; }
-                    public GMFlags GMFlags { get; set; }
-                    public SocialFlags SocialFlags { get; set; }
-                    public string DefaultDisplayName { get; set; }
-                */
-
-                foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
-                {
-                    // Constants
-                    string entity_str = Regex.Replace(entity.ToString(), @"\s+\(NetworkId\(\d+\)\)$", "");
-                    var unitsPerMeter = 2.0f;
-                    var metersPerUnit = 1.0f / unitsPerMeter;
-                    string heading    = "";
-
-                    float WorldUnitsToMeters(float units) => units * metersPerUnit;
-                    //f float MetersToWorldUnits(float meters) => meters * unitsPerMeter;
-
-                    Vector3 mpos  = entity.Position;
-                    Vector3 mypos = LocalPlayer.Position;
-                    Vector3 diff  = mpos - mypos;
-
-                    // Helpers.IsPlayer((EntityPlayerGameObject)entity);
-                    if(diff == Vector3.zero) // Skip myself, until i can figure out how to call .IsPlayer
-                    {
-                        continue;
-                    }
-
-                    Vector3 toMonster = (entity.Transform.position - LocalPlayer.Transform.position).normalized;
-                    Vector3 forward   = LocalPlayer.Transform.forward;
-                    Vector3 right     = LocalPlayer.Transform.right;
-
-                    // Angle between forward and toMonster
-                    float dotForward = Vector3.Dot(forward, toMonster);   // front vs back
-                    float dotRight   = Vector3.Dot(right,   toMonster); 
-                    
-                    float angleThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);  // = 0.7071...
-
-                    if (dotForward > angleThreshold)
-                    {
-                        heading = " in front of you.";
-                    }
-                    else if (dotForward < -angleThreshold)
-                    {
-                        heading = " behind you.";
-                    }
-                    else if (dotRight > 0)
-                    {
-                        heading = " to the right of you.";
-                    }
-                    else
-                    {
-                        heading = " to the left of you.";
-                    }
-                    
-                    Log.LogInfo(entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading);
-
-                    // -------------------------------
-                    // Detect GMs
-                    //
-                    if(entity.Info.IsGM || entity.Info.IsDev)
-                    {
-                        Log.LogInfo("!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +  entity.Position.ToString() + ". Flags = " + entity.Info.GMFlags.ToString() + ". Invisible = " + entity.Info.GMInvisible);
-                    }
-                }
             }
         }
 
