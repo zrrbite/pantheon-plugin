@@ -66,16 +66,6 @@ public class Plugin : BasePlugin
                 MainWindow = new Rect(150.0f, Screen.height - 250f, 250f, 150f);
             }
 
-            private void OnUpdate() { }
-
-            private static void RenderUI(int id)
-            {
-                // Tracking UI
-                GUILayout.Space(1f);
-
-                // Finalize
-                GUI.DragWindow();
-            }
             // how is it different than ongui?
             private void Update()
             {
@@ -102,18 +92,6 @@ public class Plugin : BasePlugin
                 GUI.Box(windowRect, "Tracking");
 
                 scrollPosition = GUI.BeginScrollView(viewRect, scrollPosition, contentRect);
-
-                //Also check for GM?
-                /* 
-                    public bool IsDev { get; }
-                    public bool IsGM { get; set; }
-                    public bool GMImmortal { get; set; }
-                    public bool GMCanBeAggroed { get; set; }
-                    public bool GMInvisible { get; set; }
-                    public GMFlags GMFlags { get; set; }
-                    public SocialFlags SocialFlags { get; set; }
-                    public string DefaultDisplayName { get; set; }
-                */
 
                 int entries = 0;
                 foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
