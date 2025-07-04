@@ -180,7 +180,7 @@ public class Plugin : BasePlugin
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }    
-                if (GUI.Button(new Rect(20, 660, 100, 30), "-0.5x movement"))
+                if (GUI.Button(new Rect(20, 660, 120, 30), "-0.5x movement"))
                 {
                     try
                     {
@@ -209,7 +209,32 @@ public class Plugin : BasePlugin
                     try
                     {
                         Log.LogInfo("Become GM");
-                        LocalPlayer.info.AccessLevel = AccessLevel.GameMaster;                     
+                        LocalPlayer.info.AccessLevel = AccessLevel.GameMaster;
+
+                        Log.LogInfo("Set modifiers");
+                        EntityMultiplier.Modifier modifier = new EntityMultiplier.Modifier(100);
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.OutDamage, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.OutHealing, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.InHealing, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.EssenceGeneration, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.OutNatureDamage, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.CastingSpeedAll, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.PrimaryWeaponDamage, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.CritDamagePhysical, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.CritDamageMagic, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.OutPhysicalCritChance, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.OutMagicCritChance, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.CastingRange, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.ExperienceMultiplier, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.ExperienceMultiplier, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        //InCrowdControlDuration
+
+                        // Cost
+                        modifier = new EntityMultiplier.Modifier(1);
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.PhysicalAbilityCost, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.MagicAbilityCost, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                        LocalPlayer.Multipliers.Add(EntityMultiplierType.InCrowdControlDuration, modifier); //	public void Add(EntityMultiplierType entityMultiplierType, EntityMultiplier.Modifier modifier) { }
+                     
                         //BaseEntityGameObject.Messaging                      
                         //EntityClientMessaging.Logic.SendTeleportEvent(v);
                         //EntityClientMessaging.TeleportPosition(v);
@@ -224,11 +249,22 @@ public class Plugin : BasePlugin
                     try
                     {
                         Log.LogInfo("Weeeee");
-                        Vector3 v = new Vector3(10, 10, 10);    // z is tricky  
+                        Vector3 v = new Vector3(3769, -957, 50); // Sometimes its overwritten in hook, sometimes not? Just get it from Global config, set by buttons.
 
-                        //BaseEntityGameObject.Messaging: EntityClientMessaging.Logic (l 51237)                  
+                        // Try hooking into event to see what vector looks like
+                        //public void add_AnyTeleportEvent(TeleportTransformCallback value) { }
+                        //Vector3 vin = Vector3.zero;
+                        //Quaternion qin = new Quaternion();
+                        //TeleportTransformCallback cb = new TeleportTransformCallback(vin, qin);
+                        //LocalPlayer.Messaging.add_add_AnyTeleportEvent(cb);  
+
+                        //BaseEntityGameObject.Messaging: EntityClientMessaging.Logic (l 51237)
+                        // All events seem to end up at 0, 0, 0.                  
                         LocalPlayer.Messaging.SendTeleportEvent(v);
-                        
+   
+                        // spawn projectile
+                        //LocalPlayer.Messaging.CreateProjectile(1, PantheonClientConnection.LocalPlayer, 50, 50, 2, 10, 10, null /*AbilityData*/, null /*addressableKey*/, LocalPlayer);
+
                         //LocalPlayer.Messaging.SendChatMessage()
                         //public void CreateProjectile(double time, IEntity defender, float speed, float radius, int bounceCount, 
                         // float relativeSpawnHeight, float relativeTargetHeight, AbilityData impactAbility, string addressableKey, IEntity owner) { }
@@ -601,16 +637,15 @@ public enum StatType // TypeDefIndex: 17296
 //	private void TeleportPosition(Vector3 position) { }
 /// </summary>
 /// 
-
+        // Must be triggered programatically. Does not override actual teleport spells.
         [HarmonyPatch(typeof(EntityClientMessaging.Logic), nameof(EntityClientMessaging.Logic.SendTeleportEvent), [typeof(Vector3)])]
         public static class TeleportPatch
         {
             public static void Prefix(ref Vector3 endPosition)
             {
                 Log.LogInfo("Teleport event!!!1!!1" + endPosition);
-                Vector3 v = new Vector3(0,0,0);
+                Vector3 v = new Vector3(3769, -957, 50);
                 endPosition = v;
-
             }
         }
 
