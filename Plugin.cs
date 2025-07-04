@@ -44,7 +44,7 @@ public class Plugin : BasePlugin
                 "Line 9: Line 9",
                 "Line 10: The end"
             };
-            private static Rect windowRect = new Rect(10, 500, 300, 200);
+            private static Rect windowRect = new Rect(300, 700, 300, 200);
             private static Vector2 scrollPosition = Vector2.zero;
             // Define scrollable area inside the box
             static Rect viewRect = new Rect(windowRect.x + 10, windowRect.y + 25, windowRect.width - 20, windowRect.height - 35);
@@ -77,6 +77,7 @@ public class Plugin : BasePlugin
 
             private void OnGUI()
             {
+                
                 //MainWindow = GUILayout.Window(0, MainWindow, new GUI.WindowFunction(RenderUI), "Tracking", new GUILayoutOption[0]);
 
                 // save the old background color
@@ -165,9 +166,9 @@ public class Plugin : BasePlugin
                 GUI.EndScrollView();
 
                 // Function menu
-                GUI.Box(new Rect(10, 200, 120, 150), "Menu");
+                GUI.Box(new Rect(10, 600, 130, 230), "Menu");
 
-                if (GUI.Button(new Rect(20, 230, 100, 30), "+0.5x movement"))
+                if (GUI.Button(new Rect(20, 630, 120, 30), "+0.5x movement"))
                 {
                     try
                     {
@@ -179,7 +180,7 @@ public class Plugin : BasePlugin
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }    
-                if (GUI.Button(new Rect(20, 260, 100, 30), "-0.5x movement"))
+                if (GUI.Button(new Rect(20, 660, 100, 30), "-0.5x movement"))
                 {
                     try
                     {
@@ -191,7 +192,7 @@ public class Plugin : BasePlugin
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }         
-                if (GUI.Button(new Rect(20, 290, 100, 30), "Toggle Fly"))
+                if (GUI.Button(new Rect(20, 690, 120, 30), "Toggle Fly"))
                 {
                     try
                     {
@@ -202,30 +203,14 @@ public class Plugin : BasePlugin
                     {
                         Log.LogInfo("Ex: " + ex.Message);
                     }
-                }
-                if (GUI.Button(new Rect(20, 320, 100, 30), "Track"))
-                {
-                    try
-                    {
-                        Log.LogInfo("Tracking window active");
-
-
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.LogInfo("Ex: " + ex.Message);
-                    }
-                }                                            
-//scp -r deck@192.168.86.42:'/run/media/mmcblk0p1/users/steamuser/Documents/My Games/Pantheon/App/BepInEx/interop/' interop_new
-/*                if (GUI.Button(new Rect(20, 290, 100, 30), "Become GM"))
+                }                                        
+                if (GUI.Button(new Rect(20, 720, 120, 30), "Become GM"))
                 {
                     try
                     {
                         Log.LogInfo("Become GM");
-                        LocalPlayer.info.AccessLevel = AccessLevel.GameMaster;
-                        Vector3 v = new Vector3(0,0,0);
-                        
+                        LocalPlayer.info.AccessLevel = AccessLevel.GameMaster;                     
+                        //BaseEntityGameObject.Messaging                      
                         //EntityClientMessaging.Logic.SendTeleportEvent(v);
                         //EntityClientMessaging.TeleportPosition(v);
                     }
@@ -233,8 +218,31 @@ public class Plugin : BasePlugin
                     {
                         Log.LogInfo("Ex: " + ex.Message);
                     }
-                }  
-*/                
+                }
+                if (GUI.Button(new Rect(20, 750, 120, 30), "Port"))
+                {
+                    try
+                    {
+                        Log.LogInfo("Weeeee");
+                        Vector3 v = new Vector3(10, 10, 10);    // z is tricky  
+
+                        //BaseEntityGameObject.Messaging: EntityClientMessaging.Logic (l 51237)                  
+                        LocalPlayer.Messaging.SendTeleportEvent(v);
+                        
+                        //LocalPlayer.Messaging.SendChatMessage()
+                        //public void CreateProjectile(double time, IEntity defender, float speed, float radius, int bounceCount, 
+                        // float relativeSpawnHeight, float relativeTargetHeight, AbilityData impactAbility, string addressableKey, IEntity owner) { }
+                     //   foreach (IEntity entity in GameObject.FindObjectsOfType<IEntity>())
+                     //   { 
+                     //       LocalPlayer.Messaging.CreateProjectile(1, entity, 50, 50, 2, 10, 10, null /*AbilityData*/, null /*addressableKey*/, LocalPlayer);
+                     //   }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }                   
+               
                 /*
                 if (GUI.Button(new Rect(20, 290, 100, 30), "Almost level up"))
                 {
@@ -597,9 +605,12 @@ public enum StatType // TypeDefIndex: 17296
         [HarmonyPatch(typeof(EntityClientMessaging.Logic), nameof(EntityClientMessaging.Logic.SendTeleportEvent), [typeof(Vector3)])]
         public static class TeleportPatch
         {
-            public static void Prefix(ref float endPosition)
+            public static void Prefix(ref Vector3 endPosition)
             {
                 Log.LogInfo("Teleport event!!!1!!1" + endPosition);
+                Vector3 v = new Vector3(0,0,0);
+                endPosition = v;
+
             }
         }
 
@@ -629,12 +640,22 @@ public enum StatType // TypeDefIndex: 17296
         // -------------------------------
         // Stat Formulas
         // To try:
-        //  StatFormulas.CalculateDamagePerStrength
+        //  StatFormulas.ModifyValueByHastePercent
         //  public static float CalculateDodge(float dodgeRating) { }
         // 
         // Do the "register" spells just fire once?
         // 
         // -------------------------------
+
+//todo: MatchDamageAdjustment:public unsafe void ModifyValue([DefaultParameterValue(null)] ref float value, [DefaultParameterValue(null)] AbilityType abilityType, [DefaultParameterValue(null)] CastType castType, [DefaultParameterValue(null)] AbilityTargetType abilityTargetType, [DefaultParameterValue(null)] SpellType spellType)
+        [HarmonyPatch(typeof(MatchDamageAdjustment), nameof(MatchDamageAdjustment.ModifyValue))]
+        public static class ModifyValueCore
+        {
+            public static void Prefix(ref float value, AbilityType abilityType, CastType castType, AbilityTargetType abilityTargetType, SpellType spellType)
+            {
+                Log.LogInfo("ModifyValueCore Called: value " + value);
+            }
+        }
 
 // todo: 	public EntityMultipliers.Logic Multipliers { get; set; } : 43284. Might be readonly
 
@@ -646,6 +667,7 @@ public enum StatType // TypeDefIndex: 17296
             {
                 Log.LogInfo("Haste percent before: " + hastePercent + ". value " + value);
                 hastePercent = 500f;
+                value = 300f;
                 Log.LogInfo("Haste percent after: " + hastePercent + ". value " + value);
             }
         }
