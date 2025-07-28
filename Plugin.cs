@@ -50,12 +50,9 @@ public class Plugin : BasePlugin
             static Rect viewRect = new Rect(windowRect.x + 10, windowRect.y + 25, windowRect.width - 20, windowRect.height - 35);
             static Rect contentRect = new Rect(0, 0, viewRect.width - 20, lines.Length * 20);
             private Rect statusRect = new Rect(200, 10, 200, 50);
-            private bool gm = false; 
-            private string gmString = "";
 
             private static void RenderUIStatic(int id)
             {
-                GUILayout.Label("Tracking window");
                 GUI.DragWindow();
             }
             private void Start()
@@ -77,94 +74,6 @@ public class Plugin : BasePlugin
 
             private void OnGUI()
             {
-                
-                //MainWindow = GUILayout.Window(0, MainWindow, new GUI.WindowFunction(RenderUI), "Tracking", new GUILayoutOption[0]);
-
-                // save the old background color
-                Color oldBg = GUI.backgroundColor;
-
-                GUI.backgroundColor = gm ? Color.red : Color.green;
-                GUI.Box(statusRect, gm ? gmString : "");
-
-                // restore old color
-                GUI.backgroundColor = oldBg;
-                
-                // Draw the window box
-                GUI.Box(windowRect, "Tracking");
-
-                scrollPosition = GUI.BeginScrollView(viewRect, scrollPosition, contentRect);
-
-                int entries = 0;
-                foreach (BaseEntityGameObject entity in GameObject.FindObjectsOfType<EntityGameObject>())
-                {
-                    // Constants
-                    string entity_str = Regex.Replace(entity.ToString(), @"\s+\(NetworkId\(\d+\)\)$", "");
-                    var unitsPerMeter = 2.0f;
-                    var metersPerUnit = 1.0f / unitsPerMeter;
-                    string heading    = "";
-
-                    float WorldUnitsToMeters(float units) => units * metersPerUnit;
-                    //f float MetersToWorldUnits(float meters) => meters * unitsPerMeter;
-
-                    Vector3 mpos  = entity.Position;
-                    Vector3 mypos = LocalPlayer.Position;
-                    Vector3 diff  = mpos - mypos;
-
-                    // Helpers.IsPlayer((EntityPlayerGameObject)entity);
-                    if(diff == Vector3.zero) // Skip myself, until i can figure out how to call .IsPlayer
-                    {
-                        continue;
-                    }
-
-                    Vector3 toMonster = (entity.Transform.position - LocalPlayer.Transform.position).normalized;
-                    Vector3 forward   = LocalPlayer.Transform.forward;
-                    Vector3 right     = LocalPlayer.Transform.right;
-
-                    // Angle between forward and toMonster
-                    float dotForward = Vector3.Dot(forward, toMonster);   // front vs back
-                    float dotRight   = Vector3.Dot(right,   toMonster); 
-                    
-                    float angleThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);  // = 0.7071...
-
-                    if (dotForward > angleThreshold)
-                    {
-                        heading = " in front of you.";
-                    }
-                    else if (dotForward < -angleThreshold)
-                    {
-                        heading = " behind you.";
-                    }
-                    else if (dotRight > 0)
-                    {
-                        heading = " to the right of you.";
-                    }
-                    else
-                    {
-                        heading = " to the left of you.";
-                    }
-                    
-                    string entry = entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading;
-                    //Log.LogInfo(entity_str + " - " + Mathf.Round(WorldUnitsToMeters(Vector3.Distance(mpos, mypos)) * 100f) / 100f + "m" + heading);
-                    GUI.Label(new Rect(0, entries * 20, contentRect.width, 20), entry);
-                    entries++;
-
-                    // -------------------------------
-                    // Detect GMs
-                    //
-                    if(entity.Info.IsGM || entity.Info.IsDev)
-                    {
-                        gmString = "!!!! WARNING!!!! GM/Dev: " + entity.Info.DefaultDisplayName + " detected at " +  entity.Position.ToString() + ". Flags = " + entity.Info.GMFlags.ToString() + ". Invisible = " + entity.Info.GMInvisible;
-                        gm = true;
-                        Log.LogInfo(gmString);
-                    }
-                    else
-                    {
-                        gm =false;
-                    }
-                }
-
-                GUI.EndScrollView();
-
                 // Function menu
                 GUI.Box(new Rect(10, 600, 130, 230), "Menu");
 
