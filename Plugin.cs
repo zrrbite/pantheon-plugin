@@ -249,7 +249,7 @@ public class Plugin : BasePlugin
                     try
                     {
                         Log.LogInfo("Weeeee");
-                        Vector3 v = new Vector3(3769, -957, 50); // Sometimes its overwritten in hook, sometimes not? Just get it from Global config, set by buttons.
+                        Vector3 v = new Vector3(3769, 50, -957); // Sometimes its overwritten in hook, sometimes not? Just get it from Global config, set by buttons.
 
                         // Try hooking into event to see what vector looks like
                         //public void add_AnyTeleportEvent(TeleportTransformCallback value) { }
@@ -644,7 +644,7 @@ public enum StatType // TypeDefIndex: 17296
             public static void Prefix(ref Vector3 endPosition)
             {
                 Log.LogInfo("Teleport event!!!1!!1" + endPosition);
-                Vector3 v = new Vector3(3769, -957, 50);
+                Vector3 v = new Vector3(3769, 50 , -957);
                 endPosition = v;
             }
         }
