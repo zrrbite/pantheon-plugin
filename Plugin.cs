@@ -25,6 +25,8 @@ public class Plugin : BasePlugin
     static Equipment.Logic GlobalEquipment;
     static float SpeedMult = 1;
     static bool Fly = false;
+    static bool HasteBoost = false;
+    static bool Stealth = false;
     
         public class Hmm : MonoBehaviour
         {
@@ -39,7 +41,7 @@ public class Plugin : BasePlugin
 
             private void OnGUI()
             {
-                GUI.Box(new Rect(10, 200, 100, 90), "Some menu");
+                GUI.Box(new Rect(10, 200, 140, 280), "Some menu");
 
                 // Add more buttons
                 if (GUI.Button(new Rect(20, 230, 100, 30), "+1 Level"))
@@ -107,7 +109,51 @@ public class Plugin : BasePlugin
                     {
                         Log.LogInfo("Ex: " + ex.Message);
                     }
-                }                                            
+                }
+                if (GUI.Button(new Rect(20, 370, 120, 30), HasteBoost ? "Haste 5x: ON" : "Haste 5x: OFF"))
+                {
+                    try
+                    {
+                        HasteBoost = !HasteBoost;
+                        Log.LogInfo("Haste boost toggled to " + HasteBoost);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 400, 120, 30), Stealth ? "Sneak: ON" : "Sneak: OFF"))
+                {
+                    try
+                    {
+                        Stealth = !Stealth;
+                        Log.LogInfo("Sneak toggled to " + Stealth);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 430, 120, 30), "Show pos"))
+                {
+                    try
+                    {
+                        if (LocalPlayer != null)
+                        {
+                            var p = LocalPlayer.Position;
+                            Log.LogInfo($"Pos: ({p.x:F1}, {p.y:F1}, {p.z:F1})");
+                        }
+                        else
+                        {
+                            Log.LogInfo("LocalPlayer not set");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+
 //scp -r deck@192.168.86.42:'/run/media/mmcblk0p1/users/steamuser/Documents/My Games/Pantheon/App/BepInEx/interop/' interop_new
 /*                if (GUI.Button(new Rect(20, 290, 100, 30), "Become GM"))
                 {
@@ -157,8 +203,18 @@ public class Plugin : BasePlugin
         // [Info   :Pantheon Plugin] Patched function NetworkStop
         // [Message:   BepInEx] Chainloader startup complete
 
-        Harmony.PatchAll();
+        // Attach the IMGUI MonoBehaviour first so it survives even if a stale Harmony patch
+        // throws during PatchAll — patches declared before the bad one still apply, the menu
+        // stays available, and the plugin does not get marked as failed-to-load.
         AddComponent<Hmm>();
+        try
+        {
+            Harmony.PatchAll();
+        }
+        catch (Exception ex)
+        {
+            Log.LogError($"Harmony.PatchAll aborted partway through: {ex}");
+        }
         foreach (var method in Harmony.GetPatchedMethods())
             Log.LogInfo($"Patched function {method.Name}");
     }
@@ -481,6 +537,11 @@ public enum StatType // TypeDefIndex: 17296
 /// </summary>
 /// 
 
+/*      Disabled: HarmonyX cannot resolve EntityClientMessaging.Logic.SendTeleportEvent(Vector3)
+        on current Pantheon build, and Prefix's `ref float endPosition` is the wrong shape for
+        a Vector3 parameter anyway. The real RPC appears to be TeleportPosition(Vector3) on a
+        different type (see notes above) — revisit when actually wiring up teleport.
+
         [HarmonyPatch(typeof(EntityClientMessaging.Logic), nameof(EntityClientMessaging.Logic.SendTeleportEvent), [typeof(Vector3)])]
         public static class TeleportPatch
         {
@@ -489,6 +550,7 @@ public enum StatType // TypeDefIndex: 17296
                 Log.LogInfo("Teleport event!!!1!!1" + endPosition);
             }
         }
+*/
 
 /*
         [HarmonyPatch(typeof(Experience), nameof(Experience.SetExperienceFromServer))]
@@ -525,15 +587,15 @@ public enum StatType // TypeDefIndex: 17296
 
 // todo: 	public EntityMultipliers.Logic Multipliers { get; set; } : 43284. Might be readonly
 
-        // This hook is hit, sometimes
-        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.ModifyValueByHastePercent))]
+        // Real signature found via ILSpy: ModifyValueByHastePercent(float value, float hastePercent, float maxReductionPercent).
+        // (There is also a (double, float, float) overload — patch that one separately if needed.)
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.ModifyValueByHastePercent), [typeof(float), typeof(float), typeof(float)])]
         public static class HasteValuePatch
         {
-            public static void Prefix(ref float value, ref float hastePercent)
+            public static void Prefix(ref float value, ref float hastePercent, ref float maxReductionPercent)
             {
-                Log.LogInfo("Haste percent before: " + hastePercent + ". value " + value);
-                hastePercent = 500f;
-                Log.LogInfo("Haste percent after: " + hastePercent + ". value " + value);
+                if (HasteBoost)
+                    hastePercent = 500f;
             }
         }
 
@@ -650,16 +712,15 @@ public enum StatType // TypeDefIndex: 17296
 //public unsafe void SetStealth([DefaultParameterValue(null)] bool isStealth)
 //public unsafe static bool IsHealthLowEnoughToCauseDeath([DefaultParameterValue(null)] float health, [DefaultParameterValue(null)] float min)
 
-  /*      [HarmonyPatch(typeof(CombatEffects), nameof(CombatEffects.SetStealth), [typeof(bool)])]
+        [HarmonyPatch(typeof(CombatEffects), nameof(CombatEffects.SetStealth), [typeof(bool)])]
         public static class StealthPatch
         {
             public static void Prefix(ref bool isStealth)
             {
-                Log.LogInfo(" Stealthy ");
-                isStealth = true;
+                if (Stealth)
+                    isStealth = true;
             }
         }
-*/
 
 /*
         [HarmonyPatch(typeof(HealthPool), nameof(HealthPool.IsHealthLowEnoughToCauseDeath), [typeof(float), typeof(float)])]
