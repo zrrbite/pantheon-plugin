@@ -3,7 +3,7 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using PantheonPersist;
-//using ViNL;
+using ViNL;                       // ViNL.Peer is needed to patch RPC handlers in Experience.__RpcMethods
 using UnityEngine;
 using System;
 using System.IO;
@@ -27,6 +27,9 @@ public class Plugin : BasePlugin
     static bool Fly = false;
     static bool HasteBoost = false;
     static bool Stealth = false;
+    static bool GodMode = false;        // visual-only: Pools.GetCurrent always reports Max
+    static bool VisualLevel99 = false;  // visual-only: SetLevelFromServer overrides level to 99
+    static bool DamageInflate = false;  // visual-only: tooltip damage / healing bonuses inflated
     
         public class Hmm : MonoBehaviour
         {
@@ -41,7 +44,7 @@ public class Plugin : BasePlugin
 
             private void OnGUI()
             {
-                GUI.Box(new Rect(10, 200, 140, 280), "Some menu");
+                GUI.Box(new Rect(10, 200, 140, 420), "Some menu");
 
                 // Add more buttons
                 if (GUI.Button(new Rect(20, 230, 100, 30), "+1 Level"))
@@ -151,6 +154,72 @@ public class Plugin : BasePlugin
                     catch (Exception ex)
                     {
                         Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 460, 120, 30), GodMode ? "GodMode (vis): ON" : "GodMode (vis): OFF"))
+                {
+                    try
+                    {
+                        GodMode = !GodMode;
+                        Log.LogInfo("Visual GodMode toggled to " + GodMode);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 490, 120, 30), VisualLevel99 ? "Visual Lv 99: ON" : "Visual Lv 99: OFF"))
+                {
+                    try
+                    {
+                        VisualLevel99 = !VisualLevel99;
+                        Log.LogInfo("VisualLevel99 toggled to " + VisualLevel99);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 520, 120, 30), DamageInflate ? "Dmg Infl: ON" : "Dmg Infl: OFF"))
+                {
+                    try
+                    {
+                        DamageInflate = !DamageInflate;
+                        Log.LogInfo("DamageInflate toggled to " + DamageInflate);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 550, 120, 30), "Almost level up"))
+                {
+                    try
+                    {
+                        if (LocalPlayer != null)
+                        {
+                            int level = LocalPlayer.Experience.Level;
+                            int needed = Experience.Logic.CalculateExperienceRequiredToReachLevel(level + 1);
+                            LocalPlayer.Experience.SetExperience(needed - 1, false);
+                            Log.LogInfo($"Set XP to {needed - 1} (one short of level {level + 1}, client-side only)");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 580, 120, 30), "Try DebugMenu"))
+                {
+                    try
+                    {
+                        Log.LogInfo("Spawning DebugMenuGUI on a new GameObject...");
+                        new GameObject("PantheonPlugin_DebugMenu").AddComponent<DebugMenuGUI>();
+                        Log.LogInfo("DebugMenuGUI added — look for any new on-screen UI.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("DebugMenu Ex: " + ex.Message);
                     }
                 }
 
@@ -798,11 +867,80 @@ public enum StatType // TypeDefIndex: 17296
             }
         }        
 */
+        // Visual godmode: any caller asking for GetCurrent(pool) sees Max while toggle is on.
+        // Server still tracks real values; this only changes what local code/UI observes.
+        [HarmonyPatch(typeof(Pools.Logic), nameof(Pools.Logic.GetCurrent), [typeof(PoolType)])]
+        public static class GetCurrentPatch
+        {
+            public static void Postfix(Pools.Logic __instance, PoolType poolType, ref float __result)
+            {
+                if (GodMode)
+                    __result = __instance.GetMax(poolType);
+            }
+        }
+
+        // Visual level / XP: rewrite the server-pushed values on the receive RPC handlers
+        // (Experience.__RpcMethods is the dispatcher class — methods are internal, hence string
+        // method names, but Harmony patches by reflection so visibility doesn't matter).
+        [HarmonyPatch(typeof(Experience.__RpcMethods), "SetLevelFromServer", [typeof(int)])]
+        public static class SetLevelFromServerPatch
+        {
+            public static void Prefix(ref int level)
+            {
+                if (VisualLevel99)
+                    level = 99;
+            }
+        }
+        [HarmonyPatch(typeof(Experience.__RpcMethods), "SetExperienceFromServer", [typeof(Peer), typeof(int)])]
+        public static class SetExperienceFromServerPatch
+        {
+            public static void Prefix(Peer _, ref int totalExperience)
+            {
+                if (VisualLevel99)
+                    totalExperience = Experience.Logic.CalculateExperienceRequiredToReachLevel(99);
+            }
+        }
+
+        // Damage-formula inflation. Real damage is server-computed; these are read by tooltips
+        // and local prediction paths so the toggle effectively shows fake-big numbers locally.
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusMeleeDamageFromAttackPower), [typeof(float)])]
+        public static class BonusMeleeDamagePatch
+        {
+            public static void Postfix(ref float __result)
+            {
+                if (DamageInflate) __result = 1000f;
+            }
+        }
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusSpellDamageFromSpellPower), [typeof(float)])]
+        public static class BonusSpellDamagePatch
+        {
+            public static void Postfix(ref float __result)
+            {
+                if (DamageInflate) __result = 1000f;
+            }
+        }
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusHealingFromSpellPower), [typeof(float)])]
+        public static class BonusHealingPatch
+        {
+            public static void Postfix(ref float __result)
+            {
+                if (DamageInflate) __result = 1000f;
+            }
+        }
+        [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.CalculateDamagePerStrength), [typeof(float), typeof(float)])]
+        public static class DamagePerStrengthPatch
+        {
+            public static void Postfix(ref float __result)
+            {
+                if (DamageInflate) __result *= 100f;
+            }
+        }
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EntityPlayerGameObject), nameof(EntityPlayerGameObject.NetworkStop))]
         private static void NetWorkStop(EntityPlayerGameObject __instance)
         {
             Log.LogInfo("Network stop");
-        }    
+        }
     }
 }
