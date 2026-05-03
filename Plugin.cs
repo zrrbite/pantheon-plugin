@@ -867,28 +867,28 @@ public enum StatType // TypeDefIndex: 17296
             }
         }        
 */
-        // Visual godmode: any caller asking for GetCurrent(pool) sees Max while toggle is on.
-        // Server still tracks real values; this only changes what local code/UI observes.
+/*      All seven of these patches loaded cleanly per the BepInEx log, but the game then
+        died silently before reaching the title screen. Disabled wholesale so we can re-enable
+        them one at a time and bisect which one is the culprit. Toggle buttons in OnGUI still
+        flip the static bools — they just don't do anything until their backing patch is back.
+
+        // Visual godmode (suspect: very hot path — called by HUD every frame).
         [HarmonyPatch(typeof(Pools.Logic), nameof(Pools.Logic.GetCurrent), [typeof(PoolType)])]
         public static class GetCurrentPatch
         {
             public static void Postfix(Pools.Logic __instance, PoolType poolType, ref float __result)
             {
-                if (GodMode)
-                    __result = __instance.GetMax(poolType);
+                if (GodMode) __result = __instance.GetMax(poolType);
             }
         }
 
-        // Visual level / XP: rewrite the server-pushed values on the receive RPC handlers
-        // (Experience.__RpcMethods is the dispatcher class — methods are internal, hence string
-        // method names, but Harmony patches by reflection so visibility doesn't matter).
+        // Visual level / XP via __RpcMethods (low-frequency — only fires on server level events).
         [HarmonyPatch(typeof(Experience.__RpcMethods), "SetLevelFromServer", [typeof(int)])]
         public static class SetLevelFromServerPatch
         {
             public static void Prefix(ref int level)
             {
-                if (VisualLevel99)
-                    level = 99;
+                if (VisualLevel99) level = 99;
             }
         }
         [HarmonyPatch(typeof(Experience.__RpcMethods), "SetExperienceFromServer", [typeof(Peer), typeof(int)])]
@@ -901,40 +901,28 @@ public enum StatType // TypeDefIndex: 17296
             }
         }
 
-        // Damage-formula inflation. Real damage is server-computed; these are read by tooltips
-        // and local prediction paths so the toggle effectively shows fake-big numbers locally.
+        // Damage-formula inflation (called from tooltips and combat math).
         [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusMeleeDamageFromAttackPower), [typeof(float)])]
         public static class BonusMeleeDamagePatch
         {
-            public static void Postfix(ref float __result)
-            {
-                if (DamageInflate) __result = 1000f;
-            }
+            public static void Postfix(ref float __result) { if (DamageInflate) __result = 1000f; }
         }
         [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusSpellDamageFromSpellPower), [typeof(float)])]
         public static class BonusSpellDamagePatch
         {
-            public static void Postfix(ref float __result)
-            {
-                if (DamageInflate) __result = 1000f;
-            }
+            public static void Postfix(ref float __result) { if (DamageInflate) __result = 1000f; }
         }
         [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusHealingFromSpellPower), [typeof(float)])]
         public static class BonusHealingPatch
         {
-            public static void Postfix(ref float __result)
-            {
-                if (DamageInflate) __result = 1000f;
-            }
+            public static void Postfix(ref float __result) { if (DamageInflate) __result = 1000f; }
         }
         [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.CalculateDamagePerStrength), [typeof(float), typeof(float)])]
         public static class DamagePerStrengthPatch
         {
-            public static void Postfix(ref float __result)
-            {
-                if (DamageInflate) __result *= 100f;
-            }
+            public static void Postfix(ref float __result) { if (DamageInflate) __result *= 100f; }
         }
+*/
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EntityPlayerGameObject), nameof(EntityPlayerGameObject.NetworkStop))]
