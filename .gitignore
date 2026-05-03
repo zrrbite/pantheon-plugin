@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+
+# IDE / Visual Studio
+.vs/
+.vscode/
+.idea/
+.claude/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Plugin runtime artifact (written by the timer in Plugin.cs)
+loc

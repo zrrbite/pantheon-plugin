@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>PantheonPlugin</AssemblyName>
+    <RootNamespace>PantheonPlugin</RootNamespace>
+    <Product>Pantheon Plugin</Product>
+    <Version>1.3.7</Version>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!--
+    BepInEx 6 IL2CPP host (provides BasePlugin, BepInPlugin, ManualLogSource,
+    HarmonyLib, Il2CppInterop runtime) and the source generator that emits
+    MyPluginInfo.PLUGIN_GUID/NAME/VERSION from the project metadata above.
+  -->
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.755" IncludeAssets="compile" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    PantheonGamePath = the App folder containing Pantheon.exe and the BepInEx
+    subfolder generated on first launch. Default below matches the standalone
+    PantheonLauncher install. To override (different user / different machine),
+    create a sibling file `PantheonPlugin.csproj.user` (gitignored) with:
+
+      <Project>
+        <PropertyGroup>
+          <PantheonGamePath>D:\Path\To\Pantheon\App</PantheonGamePath>
+        </PropertyGroup>
+      </Project>
+  -->
+  <PropertyGroup>
+    <PantheonGamePath Condition="'$(PantheonGamePath)' == ''">$(USERPROFILE)\OneDrive\Documents\My Games\Pantheon\App</PantheonGamePath>
+    <PantheonInteropPath>$(PantheonGamePath)\BepInEx\interop</PantheonInteropPath>
+    <PantheonPluginsPath>$(PantheonGamePath)\BepInEx\plugins</PantheonPluginsPath>
+  </PropertyGroup>
+
+  <!-- Reference every Il2Cpp interop DLL the game generated on first BepInEx launch. -->
+  <ItemGroup>
+    <Reference Include="$(PantheonInteropPath)\*.dll">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Drop the built DLL straight into BepInEx/plugins after each build. -->
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(PantheonPluginsPath)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PantheonPluginsPath)" />
+    <Message Text="Deployed $(TargetFileName) -&gt; $(PantheonPluginsPath)" Importance="high" />
+  </Target>
+
+</Project>
