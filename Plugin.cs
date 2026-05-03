@@ -25,7 +25,7 @@ public class Plugin : BasePlugin
     static Equipment.Logic GlobalEquipment;
     static float SpeedMult = 1;
     static bool Fly = false;
-    static bool HasteBoost = false;
+    static float HasteBoostPercent = 0f; // 0 = patch is a no-op, leaves real haste alone
     static bool Stealth = false;
     static bool GodMode = false;        // visual-only: Pools.GetCurrent always reports Max
     static bool VisualLevel99 = false;  // visual-only: SetLevelFromServer overrides level to 99
@@ -113,12 +113,24 @@ public class Plugin : BasePlugin
                         Log.LogInfo("Ex: " + ex.Message);
                     }
                 }
-                if (GUI.Button(new Rect(20, 370, 120, 30), HasteBoost ? "Haste 5x: ON" : "Haste 5x: OFF"))
+                if (GUI.Button(new Rect(20, 370, 55, 30), "Haste +"))
                 {
                     try
                     {
-                        HasteBoost = !HasteBoost;
-                        Log.LogInfo("Haste boost toggled to " + HasteBoost);
+                        HasteBoostPercent += 100f;
+                        Log.LogInfo($"Haste boost: {HasteBoostPercent}%");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(80, 370, 55, 30), "Haste -"))
+                {
+                    try
+                    {
+                        HasteBoostPercent -= 100f;
+                        Log.LogInfo($"Haste boost: {HasteBoostPercent}%");
                     }
                     catch (Exception ex)
                     {
@@ -663,8 +675,8 @@ public enum StatType // TypeDefIndex: 17296
         {
             public static void Prefix(ref float value, ref float hastePercent, ref float maxReductionPercent)
             {
-                if (HasteBoost)
-                    hastePercent = 500f;
+                if (HasteBoostPercent != 0f)
+                    hastePercent = HasteBoostPercent;
             }
         }
 
@@ -882,7 +894,9 @@ public enum StatType // TypeDefIndex: 17296
             }
         }
 
-        // Visual level / XP via __RpcMethods (low-frequency — only fires on server level events).
+*/
+        // Bisect step 1: re-enabling only the two Experience RPC handlers.
+        // These are low-frequency — only fire when the server sends a level/XP update.
         [HarmonyPatch(typeof(Experience.__RpcMethods), "SetLevelFromServer", [typeof(int)])]
         public static class SetLevelFromServerPatch
         {
@@ -900,7 +914,7 @@ public enum StatType // TypeDefIndex: 17296
                     totalExperience = Experience.Logic.CalculateExperienceRequiredToReachLevel(99);
             }
         }
-
+/*
         // Damage-formula inflation (called from tooltips and combat math).
         [HarmonyPatch(typeof(StatFormulas), nameof(StatFormulas.GetBonusMeleeDamageFromAttackPower), [typeof(float)])]
         public static class BonusMeleeDamagePatch
