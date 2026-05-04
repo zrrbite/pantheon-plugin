@@ -19,3 +19,6 @@ Thumbs.db
 
 # Plugin runtime artifact (written by the timer in Plugin.cs)
 loc
+
+# Scratch tools (e.g. the Mono.Cecil-based interop reflector)
+_scratch/

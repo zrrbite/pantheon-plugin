@@ -30,6 +30,7 @@ public class Plugin : BasePlugin
     static bool GodMode = false;        // visual-only: Pools.GetCurrent always reports Max
     static bool VisualLevel99 = false;  // visual-only: SetLevelFromServer overrides level to 99
     static bool DamageInflate = false;  // visual-only: tooltip damage / healing bonuses inflated
+    static bool LogRpcs = false;        // when true, RpcDebug patches log every fire
     
         public class Hmm : MonoBehaviour
         {
@@ -44,7 +45,7 @@ public class Plugin : BasePlugin
 
             private void OnGUI()
             {
-                GUI.Box(new Rect(10, 200, 140, 420), "Some menu");
+                GUI.Box(new Rect(10, 200, 140, 470), "Some menu");
 
                 // Add more buttons
                 if (GUI.Button(new Rect(20, 230, 100, 30), "+1 Level"))
@@ -232,6 +233,18 @@ public class Plugin : BasePlugin
                     catch (Exception ex)
                     {
                         Log.LogInfo("DebugMenu Ex: " + ex.Message);
+                    }
+                }
+                if (GUI.Button(new Rect(20, 610, 120, 30), LogRpcs ? "RPC log: ON" : "RPC log: OFF"))
+                {
+                    try
+                    {
+                        LogRpcs = !LogRpcs;
+                        Log.LogInfo("RPC logging toggled to " + LogRpcs);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogInfo("Ex: " + ex.Message);
                     }
                 }
 
@@ -937,6 +950,114 @@ public enum StatType // TypeDefIndex: 17296
             public static void Postfix(ref float __result) { if (DamageInflate) __result *= 100f; }
         }
 */
+
+        // -------------------------------
+        // RPC instrumentation
+        // Goal: confirm empirically that no client→server RPC carries a damage/crit/hit value,
+        // and that all damage/health change comes from server→client. Toggle via "RPC log" button.
+        // Signatures pulled from Mono.Cecil dump of Scripts.dll (see _scratch/reflect/).
+        // -------------------------------
+
+        // Outgoing: client requests a cast. Only param is the ability id — server runs the rest.
+        [HarmonyPatch(typeof(Abilities.__RpcMethods), "RequestAbilityCast", [typeof(int)])]
+        public static class RpcLog_RequestAbilityCast
+        {
+            public static void Prefix(int abilityId)
+            {
+                if (LogRpcs) Log.LogInfo($"[RPC>] Abilities.RequestAbilityCast id={abilityId}");
+            }
+        }
+
+        // Outgoing: client toggles auto-attack on/off. Server-side melee swing timer runs from there.
+        [HarmonyPatch(typeof(LegacyHandlersDoNotAddAnythingHere.__RpcMethods), "RequestAutoAttackRpc", [typeof(bool)])]
+        public static class RpcLog_RequestAutoAttack
+        {
+            public static void Prefix(bool enable)
+            {
+                if (LogRpcs) Log.LogInfo($"[RPC>] Legacy.RequestAutoAttackRpc enable={enable}");
+            }
+        }
+
+        // Incoming: server tells client a cast started. Carries timing the server has already decided.
+        [HarmonyPatch(typeof(Abilities.__RpcMethods), "FinishedCast", [typeof(int), typeof(double)])]
+        public static class RpcLog_FinishedCast
+        {
+            public static void Prefix(int abilityId, double finishCooldownTime)
+            {
+                if (LogRpcs) Log.LogInfo($"[RPC<] Abilities.FinishedCast id={abilityId} cooldown={finishCooldownTime}");
+            }
+        }
+
+        // Incoming: HP/mana/breath change. This is the only path damage takes to the client.
+        [HarmonyPatch(typeof(Pools.__RpcMethods), "PoolChangedRpc", [typeof(byte), typeof(float), typeof(float)])]
+        public static class RpcLog_PoolChanged
+        {
+            public static void Prefix(byte poolTypeByte, float current, float max)
+            {
+                if (LogRpcs) Log.LogInfo($"[RPC<] Pools.PoolChangedRpc pool={(PoolType)poolTypeByte} cur={current} max={max}");
+            }
+        }
+
+        // Incoming: leaderboard-style "who hit whom hardest" — server-rolled, display only.
+        [HarmonyPatch(typeof(CombatHistory.__RpcMethods), "SetMostDamaged", [typeof(NetworkId), typeof(int), typeof(int), typeof(int)])]
+        public static class RpcLog_SetMostDamaged
+        {
+            public static void Prefix(NetworkId viewId, int damage, int healing, int other)
+            {
+                if (LogRpcs) Log.LogInfo($"[RPC<] CombatHistory.SetMostDamaged view={viewId.Value} dmg={damage} heal={healing} other={other}");
+            }
+        }
+
+        // Incoming: server announces a cast has begun, with the timing it has already decided.
+        // No client-influenceable fields — observe to confirm cast duration / GCD are server-set.
+        [HarmonyPatch(typeof(Abilities.__RpcMethods), "BeginCast",
+            [typeof(double), typeof(int), typeof(Vector3), typeof(float), typeof(NetworkId), typeof(double), typeof(double)])]
+        public static class RpcLog_BeginCast
+        {
+            public static void Prefix(double beginCastTime, int abilityId, Vector3 startPosition, float startRotation, NetworkId targetView, double finishCastTime, double finishGlobalCooldownTick)
+            {
+                if (!LogRpcs) return;
+                try
+                {
+                    Log.LogInfo($"[RPC<] Abilities.BeginCast id={abilityId} target={targetView.Value} cast={finishCastTime - beginCastTime:F3}s gcd={finishGlobalCooldownTick - beginCastTime:F3}s");
+                }
+                catch (Exception ex) { Log.LogInfo("[RPC<] BeginCast log ex: " + ex.Message); }
+            }
+        }
+
+        // Same as BeginCast but for ground-targeted abilities.
+        [HarmonyPatch(typeof(Abilities.__RpcMethods), "BeginCastWithPosition",
+            [typeof(double), typeof(int), typeof(Vector3), typeof(float), typeof(NetworkId), typeof(double), typeof(double), typeof(Vector3)])]
+        public static class RpcLog_BeginCastWithPosition
+        {
+            public static void Prefix(double beginCastTime, int abilityId, Vector3 startPosition, float startRotation, NetworkId targetView, double finishCastTime, double finishGlobalCooldownTime, Vector3 targetPosition)
+            {
+                if (!LogRpcs) return;
+                try
+                {
+                    Log.LogInfo($"[RPC<] Abilities.BeginCastWithPosition id={abilityId} target={targetView.Value} cast={finishCastTime - beginCastTime:F3}s tgtPos=({targetPosition.x:F1},{targetPosition.y:F1},{targetPosition.z:F1})");
+                }
+                catch (Exception ex) { Log.LogInfo("[RPC<] BeginCastWithPosition log ex: " + ex.Message); }
+            }
+        }
+
+        // Incoming: server pushes a serialized stat blob for an entity (us or anyone we observe).
+        // ReadOnlySpan here is Il2CppSystem.ReadOnlySpan<byte>, not System.ReadOnlySpan — confirmed
+        // via Mono.Cecil scope inspection (scope = Il2Cppmscorlib).
+        [HarmonyPatch(typeof(BaseEntityGameObject.__RpcMethods), "UpdateEntityWithDeepStatsRpc",
+            [typeof(Peer), typeof(NetworkId), typeof(Il2CppSystem.ReadOnlySpan<byte>)])]
+        public static class RpcLog_UpdateDeepStats
+        {
+            public static void Prefix(Peer _, NetworkId networkId, Il2CppSystem.ReadOnlySpan<byte> deepStats)
+            {
+                if (!LogRpcs) return;
+                try
+                {
+                    Log.LogInfo($"[RPC<] BaseEntity.UpdateEntityWithDeepStatsRpc target={networkId.Value} bytes={deepStats.Length}");
+                }
+                catch (Exception ex) { Log.LogInfo("[RPC<] UpdateDeepStats log ex: " + ex.Message); }
+            }
+        }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EntityPlayerGameObject), nameof(EntityPlayerGameObject.NetworkStop))]

@@ -10,6 +10,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <!-- Keep the scratch reflection tool (its own csproj) out of this build. -->
+  <ItemGroup>
+    <Compile Remove="_scratch\**" />
+    <None Remove="_scratch\**" />
+    <EmbeddedResource Remove="_scratch\**" />
+  </ItemGroup>
+
   <!--
     BepInEx 6 IL2CPP host (provides BasePlugin, BepInPlugin, ManualLogSource,
     HarmonyLib, Il2CppInterop runtime) and the source generator that emits
